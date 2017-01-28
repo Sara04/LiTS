@@ -21,7 +21,7 @@ RANDOM_SHUFFLE = [108, 105, 35, 124, 53, 69, 93, 46, 54, 121, 31, 42, 77, 88,
 
 
 class LiTSdb(object):
-    """LiTS class for data path and protocol split definitions.
+    """LiTSdb class for data path and protocol split definitions.
 
     Attributes:
         db_path (str): path to the LiTS database
@@ -50,10 +50,10 @@ class LiTSdb(object):
     split_ratios = ['60_20_20', '40_30_30', '80_10_10']
 
     def __init__(self, db_path, no_subjects=130, split_ratio='60_20_20'):
-        """Initialization method for LiTS object.
+        """Initialization method for LiTSdb object.
 
         Args:
-            db_path (str): path to the LiTS database
+            db_path (str): path to the LiTSdb database
             no_subjects (int): total number of patients/scans, default 130
             split_ratio (str): database split ratios into train, valid and
                                test subsets, default '60_20_20'
