@@ -2,22 +2,14 @@
 
 import os
 import natsort
+import numpy as np
 
 # random shuffling of patients' ordinal numbers in case they are ordered
 # according to the institutions where the recordings took place
-# import numpy as np
-# np.random.seed(1)
-# s = np.arange(0, 130)
-# np.random.shuffle(s)
-RANDOM_SHUFFLE = [108, 105, 35, 124, 53, 69, 93, 46, 54, 121, 31, 42, 77, 88,
-                  111, 123, 17, 58, 4, 67, 55, 44, 51, 33, 83, 117, 82, 12, 2,
-                  62, 78, 113, 116, 56, 89, 59, 85, 90, 45, 73, 104, 48, 107,
-                  65, 100, 110, 74, 119, 10, 34, 32, 98, 38, 19, 129, 27, 36,
-                  23, 39, 125, 99, 92, 40, 66, 112, 95, 115, 122, 15, 41, 52,
-                  26, 43, 24, 103, 80, 91, 49, 21, 70, 3, 118, 30, 128, 47, 97,
-                  8, 81, 60, 0, 120, 57, 22, 61, 63, 7, 126, 13, 86, 96, 94,
-                  102, 87, 68, 114, 14, 29, 28, 106, 11, 84, 18, 101, 20, 50,
-                  25, 6, 109, 71, 76, 1, 16, 64, 79, 5, 75, 9, 127, 72, 37]
+
+np.random.seed(1)
+RANDOM_SHUFFLE = np.arange(0, 130)
+np.random.shuffle(RANDOM_SHUFFLE)
 
 
 class LiTSdb(object):
