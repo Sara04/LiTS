@@ -53,4 +53,4 @@ class LiTSpreprocessor(object):
         # waiting for response
         if s in flip:
             scan.volume = scan.volume[::-1, :, :]
-            scan.segmentation = scan.segmentation[:, ::-1, :]
+            scan.segmentation = scan.segmentation[::-1, :, :]

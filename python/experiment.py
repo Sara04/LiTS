@@ -7,7 +7,6 @@ from scan import LiTSscan
 from preprocessor import LiTSpreprocessor
 from rough_detector import LiTSroughDetector
 from tumor_detector import LiTStumorDetector
-import time
 
 
 def main():
@@ -35,39 +34,28 @@ def main():
     # _______________________________________________________________________ #
     db = LiTSdb(args.db_path)
     subjects = db.get_subjects_names()
-    training, validation, testing = db.get_data_split(subjects, 1)
     # _______________________________________________________________________ #
 
-    # Data loading, preprocessing and liver bounding box detection
+    # Scan object initialization
+    # _______________________________________________________________________ #
+    scans = {}
+    for s in subjects[0:]:
+        if s not in scans:
+            scans[s] = LiTSscan(s)
+    # _______________________________________________________________________ #
+
+    # Segmentation training, validation and testing
     # _______________________________________________________________________ #
     preprocess = LiTSpreprocessor()
     rough_detector = LiTSroughDetector()
-    scans = {}
-    time_start = time.time()
-    for s in subjects[0:]:
-        print("s:", s)
-        if s not in scans:
-            scans[s] = LiTSscan(s)
-
-        # Loading CT volume, segmentation labels and voxel size,
-        # volume intensity preprocessing and patient orientation
-        # ___________________________________________________________________ #
-        scans[s].load_volume(db.get_volume_path(s))
-        scans[s].load_segmentation(db.get_segmentation_path(s))
-        scans[s].load_info(db.get_volume_path(s))
-        preprocess.preprocess(scans[s], s)
-        rough_detector.detect_liver_bbox(scans[s])
-
-    time_end = time.time()
-    print("time elapsed:", time_end - time_start)
-    # _______________________________________________________________________ #
-
-    # Segmentation training and testing
-    # _______________________________________________________________________ #
     tumor_detector = LiTStumorDetector()
 
-    tumor_detector.train(scans, training, validation)
-    tumor_detector.test(scans, testing)
+    for i in range(1, 6):
+        training, validation, testing = db.get_data_split(subjects, 1)
+        tumor_detector.train(db, scans, preprocess, rough_detector,
+                             training, validation)
+        tumor_detector.test(db, scans, preprocess, rough_detector,
+                            testing)
 
 if __name__ == '__main__':
     main()
