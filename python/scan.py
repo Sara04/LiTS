@@ -18,6 +18,7 @@ class LiTSscan(object):
                            width and depth (slice distance)
         orientation_info (tuple): tuple of three strings indicating
                                   scaner's coordinate system
+        liver_bbox (list): 3d liver bounding box
     Methods:
         load_volume: loads and stores volume and its hight, width and depth
         load_segmentation: loads and stores ground truth segmentation
@@ -39,6 +40,8 @@ class LiTSscan(object):
         self.segmentation = None
         self.voxel_size = None
         self.orientation_info = None
+        self.liver_bbox = None
+        self.orientation = None
 
     def load_volume(self, s_path):
         """Load and store volume and its hight, width and depth.
@@ -46,8 +49,11 @@ class LiTSscan(object):
         Args:
             s_path (str): path to the volume file
         """
-        self.volume = np.array(nib.load(s_path).get_data(), dtype='float32')
-        self.h, self.w, self.d = self.volume.shape
+        self.volume = (np.array(nib.load(s_path).get_data(),
+                                dtype='float32').
+                       transpose(1, 0, 2)[::-1, ::-1, :])
+
+        self.w, self.h, self.d = self.volume.shape
 
     def load_segmentation(self, s_path):
         """Load and store ground truth segmentation.
@@ -55,7 +61,9 @@ class LiTSscan(object):
         Args:
             s_path (str): path to the segmentation file
         """
-        self.segmentation = nib.load(s_path).get_data()
+        self.segmentation = (np.array(nib.load(s_path).get_data(),
+                                      dtype='uint8').
+                             transpose(1, 0, 2)[::-1, ::-1, :])
 
     def load_info(self, s_path):
         """Load and store scaner's coordinate system info and voxel size.
@@ -82,3 +90,14 @@ class LiTSscan(object):
             s_path (str): output path to the segmentation
         """
         raise NotImplementedError()
+
+    def empty(self):
+        """Empty all scan variables except name."""
+        self.volume = None
+        self.h = None
+        self.w = None
+        self.d = None
+        self.segmentation = None
+        self.voxel_size = None
+        self.orientation_info = None
+        self.liver_bbox = None
