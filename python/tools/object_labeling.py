@@ -1,5 +1,6 @@
 """Functions used for object labeling using region growing approach."""
 import numpy as np
+from scipy import ndimage
 
 
 def _append_neighbors(objects, mask, i, j, to_verify):
@@ -172,3 +173,36 @@ def labeling_3d(objects):
                                                          p[0], p[1], p[2],
                                                          to_verify)
     return mask, label
+
+
+def opening_3d(objects):
+    """Morphological opening along each axis separately.
+
+    Args:
+        objects (numpy): 3d binary image
+
+    Returns:
+        3d binary image after opening
+    """
+    h, w, d = objects.shape
+    structuring_element = ndimage.generate_binary_structure(2, 2)
+
+    for i in range(0, h):
+        input_img = objects[i, :, :]
+        objects[i, :, :] =\
+            ndimage.morphology.binary_opening(input_img,
+                                              structure=structuring_element)
+
+    for i in range(0, w):
+        input_img = objects[:, i, :]
+        objects[:, i, :] =\
+            ndimage.morphology.binary_opening(input_img,
+                                              structure=structuring_element)
+
+    for i in range(0, d):
+        input_img = objects[:, :, i]
+        objects[:, :, i] =\
+            ndimage.morphology.binary_opening(input_img,
+                                              structure=structuring_element)
+
+    return objects
