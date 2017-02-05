@@ -133,3 +133,42 @@ def region_growing_3d(init_slice, objects):
                                          p[0], p[1], p[2],
                                          to_verify)
     return mask
+
+
+def labeling_3d(objects):
+    """Label objects in the 3d binary image.
+
+    Args:
+        objects (numpy array): 3d binary image
+
+    Returns:
+        mask (numpy array): 3d image with detected objects
+        label (int): number of detected objects/labels
+
+    """
+    h, w, d = objects.shape
+    mask = np.zeros((h, w, d))
+    label = 0
+
+    while np.sum(objects) != 0:
+        to_verify = []
+        for i in range(0, h):
+            for j in range(0, w):
+                for k in range(0, d):
+                    if objects[i, j, k] and not len(to_verify):
+                        label += 1
+                        mask[i, j, k] = label
+                        objects[i, j, k] = 0
+                        to_verify = _append_neighbors_3d(objects, mask,
+                                                         i, j, k,
+                                                         to_verify)
+                if len(to_verify):
+                    while len(to_verify):
+                        p = to_verify[0]
+                        to_verify = to_verify[1:]
+                        mask[p[0], p[1], p[2]] = label
+                        objects[p[0], p[1], p[2]] = 0
+                        to_verify = _append_neighbors_3d(objects, mask,
+                                                         p[0], p[1], p[2],
+                                                         to_verify)
+    return mask, label
