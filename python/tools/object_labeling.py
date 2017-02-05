@@ -1,6 +1,7 @@
 """Functions used for object labeling using region growing approach."""
 import numpy as np
-from scipy import ndimage
+from scipy.ndimage.morphology import generate_binary_structure
+from scipy.ndimage.morphology import binary_opening
 
 
 def _append_neighbors(objects, mask, i, j, to_verify):
@@ -29,7 +30,7 @@ def region_growing(init_indices, objects):
 
     """
     h, w = objects.shape
-    mask = np.zeros((h, w))
+    mask = np.zeros((h, w), dtype='uint8')
 
     to_verify = init_indices
 
@@ -56,7 +57,7 @@ def labeling(objects):
 
     """
     h, w = objects.shape
-    mask = np.zeros((h, w))
+    mask = np.zeros((h, w), dtype='uint8')
     label = 0
 
     while np.sum(objects) != 0:
@@ -121,7 +122,7 @@ def region_growing_3d(init_slice, objects):
 
     """
     h, w, d = objects.shape
-    mask = np.zeros((h, w, d))
+    mask = np.zeros((h, w, d), dtype='uint8')
 
     to_verify = init_slice
 
@@ -148,7 +149,7 @@ def labeling_3d(objects):
 
     """
     h, w, d = objects.shape
-    mask = np.zeros((h, w, d))
+    mask = np.zeros((h, w, d), dtype='uint8')
     label = 0
 
     while np.sum(objects) != 0:
@@ -185,24 +186,21 @@ def opening_3d(objects):
         3d binary image after opening
     """
     h, w, d = objects.shape
-    structuring_element = ndimage.generate_binary_structure(2, 2)
+    se = generate_binary_structure(2, 2)
 
-    for i in range(0, h):
+    for i in range(h):
         input_img = objects[i, :, :]
-        objects[i, :, :] =\
-            ndimage.morphology.binary_opening(input_img,
-                                              structure=structuring_element)
+        objects[i, :, :] = binary_opening(input_img,
+                                          structure=se).astype(objects.dtype)
 
-    for i in range(0, w):
+    for i in range(w):
         input_img = objects[:, i, :]
-        objects[:, i, :] =\
-            ndimage.morphology.binary_opening(input_img,
-                                              structure=structuring_element)
+        objects[:, i, :] = binary_opening(input_img,
+                                          structure=se).astype(objects.dtype)
 
-    for i in range(0, d):
+    for i in range(d):
         input_img = objects[:, :, i]
-        objects[:, :, i] =\
-            ndimage.morphology.binary_opening(input_img,
-                                              structure=structuring_element)
+        objects[:, :, i] = binary_opening(input_img,
+                                          structure=se).astype(objects.dtype)
 
     return objects
