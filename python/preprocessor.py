@@ -1,9 +1,6 @@
 """Class for volume preprocessing."""
 import numpy as np
-
-# temporal solution for scan flipping
-# waiting for response
-flip = [str(i) for i in range(68, 83)]
+import cv2
 
 
 class LiTSpreprocessor(object):
@@ -28,15 +25,14 @@ class LiTSpreprocessor(object):
         self.low_threshold = low_threshold
         self.high_threshold = high_threshold
 
-    def preprocess(self, scan, s):
+    def preprocess(self, scan):
         """Preprocess volume.
 
-        Clipping, normalization and if necessary
-        flipping to RAS coordinate system.
+        Clipping, normalization and posterior -> anterior flip
+        if necessary
 
         Args:
             scan (numpy array): 3d array containing volume
-            s (string): scan name (temporal solution)
         """
         scan.volume = np.clip(scan.volume,
                               self.low_threshold,
@@ -46,11 +42,5 @@ class LiTSpreprocessor(object):
                       (self.high_threshold - self.low_threshold) - 0.5
 
         if scan.orientation_info[1] == 'P':
-            scan.volume = scan.volume[:, ::-1, :]
-            scan.segmentation = scan.segmentation[:, ::-1, :]
-
-        # temporal solution for scan flipping
-        # waiting for response
-        if s in flip:
             scan.volume = scan.volume[::-1, :, :]
             scan.segmentation = scan.segmentation[::-1, :, :]
