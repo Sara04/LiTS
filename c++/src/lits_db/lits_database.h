@@ -93,8 +93,8 @@ public:
 	std::string get_test_scan_name(int position);
 
 	void get_scan_paths(const std::string scan_name,
-			            std::string volume_path,
-			            std::string segmentation_path);
+			            std::string &volume_path,
+			            std::string &segmentation_path);
 };
 
 #endif /* LITS_DATABASE_H_ */

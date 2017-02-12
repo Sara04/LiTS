@@ -45,7 +45,7 @@ LiTS_db::LiTS_db(std::string db_path_)
  */
 LiTS_db::~LiTS_db()
 {
-	db_path = NULL;
+	db_path = "";
 	n_subjects = 0;
 	subject_names.clear();
 	empty_split();
@@ -125,9 +125,6 @@ void LiTS_db::data_split(int split_ratio, int selection)
 	for(unsigned int i = 0; i < n_test; i++)
 		testing_subjects.push_back(subject_names.
 				at((selection * n_test + n_train + n_valid + i) % n_subjects));
-
-	for(unsigned int i = 0; i < n_test; i++)
-		std::cout<<"testing subjects:"<<testing_subjects.at(i)<<std::endl;
 }
 
 /*
@@ -247,8 +244,8 @@ std::string LiTS_db::get_test_scan_name(int position)
  * 		segmentation_path: string where the segmentation path would be stored
  */
 void LiTS_db::get_scan_paths(const std::string scan_name,
-                             std::string volume_path,
-                             std::string segmentation_path)
+                             std::string &volume_path,
+                             std::string &segmentation_path)
 {
 	std::string db_batch;
 
