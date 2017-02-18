@@ -43,7 +43,20 @@ void LiTS_scan::load_info()
 	d = size_v[2];
 
 	if(size_v[0] != size_s[0] or size_v[1]!=size_s[1] or size_v[2]!=size_s[2])
-		std::cout<<"Volume and segmentation data are not compatible";
+	{
+		std::cout<<"Volume path:"<<volume_path<<std::endl;
+		std::cout<<"Segmentation path:"<<segmentation_path<<std::endl;
+		std::cout<<"Volume and segmentation data are not compatible"<<"\n";
+	}
 }
 
+VolumeType::Pointer LiTS_scan::get_volume()
+{
+	return volume;
+}
+
+void LiTS_scan::set_volume(VolumeType::Pointer volume_)
+{
+	volume = volume_;
+}
 

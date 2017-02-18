@@ -11,7 +11,7 @@
 #include "itkImage.h"
 #include "itkImageFileReader.h"
 
-typedef itk::Image<double, 3> VolumeType;
+typedef itk::Image<float, 3> VolumeType;
 typedef itk::ImageFileReader<VolumeType> VolumeReaderType;
 typedef itk::Image<unsigned char, 3> SegmentationType;
 typedef itk::ImageFileReader<SegmentationType> SegmentationReaderType;
@@ -20,6 +20,7 @@ class LiTS_scan
 {
 
 private:
+
 	std::string volume_path;
 	std::string segmentation_path;
 
@@ -35,13 +36,15 @@ private:
 	int d;
 
 public:
-
 	LiTS_scan(std::string volume_path_, std::string segmentation_path_);
 	~LiTS_scan();
 
 	void load_volume();
 	void load_segmentation();
 	void load_info();
+
+	VolumeType::Pointer get_volume();
+	void set_volume(VolumeType::Pointer volume_);
 
 };
 
