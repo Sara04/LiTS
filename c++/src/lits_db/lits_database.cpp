@@ -115,7 +115,6 @@ void LiTS_db::data_split(int split_ratio, int selection)
 	n_valid = split_ratios[split_ratio][1] /
 			  (100 / n_train_valid_test[split_ratio]) * n;
 	n_test = subject_names.size() - n_train - n_valid;
-
 	for(unsigned int i = 0; i < n_train; i++)
 		training_subjects.push_back(subject_names.
 				at((selection * n_test + i) % n_subjects));
@@ -191,6 +190,7 @@ std::string LiTS_db::get_train_scan_name(int position)
 		return training_subjects.at(position);
 	else
 	{
+		std::cout<<"Position:"<<position<<std::endl;
 		std::cout<<"warning: Invalid element selection"<<std::endl;
 		return NULL;
 	}
@@ -210,6 +210,7 @@ std::string LiTS_db::get_valid_scan_name(int position)
 		return validation_subjects.at(position);
 	else
 	{
+		std::cout<<"Position:"<<position<<std::endl;
 		std::cout<<"warning: Invalid element selection"<<std::endl;
 		return NULL;
 	}
@@ -229,6 +230,7 @@ std::string LiTS_db::get_test_scan_name(int position)
 		return testing_subjects.at(position);
 	else
 	{
+		std::cout<<"Position:"<<position<<std::endl;
 		std::cout<<"warning: Invalid element selection"<<std::endl;
 		return NULL;
 	}
@@ -249,7 +251,7 @@ void LiTS_db::get_scan_paths(const std::string scan_name,
 {
 	std::string db_batch;
 
-	if (atoi(scan_name.c_str()) <= 28)
+	if (atoi(scan_name.c_str()) < 28)
 		db_batch = "/Training Batch 1";
 	else
 		db_batch = "/Training Batch 2";

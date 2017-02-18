@@ -74,8 +74,6 @@ private:
 	int n_test;
 
 public:
-
-
 	LiTS_db(std::string db_path_);
 	~LiTS_db();
 
