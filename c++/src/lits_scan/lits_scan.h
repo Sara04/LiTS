@@ -7,9 +7,11 @@
 
 #ifndef LITS_SCAN_H_
 #define LITS_SCAN_H_
+
 #include <string>
-#include "itkImage.h"
-#include "itkImageFileReader.h"
+#include <itkImage.h>
+#include <itkImageFileReader.h>
+
 
 typedef itk::Image<float, 3> VolumeType;
 typedef itk::ImageFileReader<VolumeType> VolumeReaderType;
@@ -23,7 +25,6 @@ private:
 
 	std::string volume_path;
 	std::string segmentation_path;
-
 	VolumeType::Pointer volume = VolumeType::New();
 	SegmentationType::Pointer segmentation = SegmentationType::New();
 	SegmentationType::Pointer lungs = SegmentationType::New();
