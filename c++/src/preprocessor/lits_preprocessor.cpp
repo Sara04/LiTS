@@ -1,5 +1,5 @@
-#include "lits_preprocessor.h"
 #include "preprocessor_cuda.h"
+#include "lits_preprocessor.h"
 
 LiTS_preprocessor::LiTS_preprocessor(float lt/*=-300*/, float ut/*=700.0*/,
 		                             float min/*=-0.5*/, float max/*=0.5*/,
@@ -23,6 +23,8 @@ LiTS_preprocessor::~LiTS_preprocessor()
 
 void LiTS_preprocessor::preprocess(LiTS_scan *scan)
 {
+	VolumeType::DirectionType direction = scan->get_volume()->GetDirection();
+
 	if (!strcmp(approach.c_str(), "itk"))
 	{
 		RescalerType::Pointer rescaler = RescalerType::New();
@@ -34,8 +36,6 @@ void LiTS_preprocessor::preprocess(LiTS_scan *scan)
 		rescaler->UpdateLargestPossibleRegion();
 
 		scan->set_volume(rescaler->GetOutput());
-
-		VolumeType::DirectionType direction = scan->get_volume()->GetDirection();
 
 		if (direction[1][1] < 0)
 		{
@@ -51,7 +51,9 @@ void LiTS_preprocessor::preprocess(LiTS_scan *scan)
 	else
 	{
 		VolumeType::SizeType size = ((scan->get_volume())->GetLargestPossibleRegion()).GetSize();
-		preprocess_cuda((scan->get_volume())->GetBufferPointer(), size[0] * size[1] * size[2],
+		preprocess_cuda((scan->get_volume())->GetBufferPointer(),
+				        size[0], size[1], size[2],
+				        direction[0][0] < 0,
 				        lower_threshold, upper_threshold, minimum_value, maximum_value);
 	}
 }
