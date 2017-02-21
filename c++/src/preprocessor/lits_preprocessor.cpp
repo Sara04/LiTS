@@ -53,7 +53,7 @@ void LiTS_preprocessor::preprocess(LiTS_scan *scan)
 		VolumeType::SizeType size = ((scan->get_volume())->GetLargestPossibleRegion()).GetSize();
 		preprocess_cuda((scan->get_volume())->GetBufferPointer(),
 				        size[0], size[1], size[2],
-				        direction[0][0] < 0,
+				        direction[1][1] < 0,
 				        lower_threshold, upper_threshold, minimum_value, maximum_value);
 	}
 }
