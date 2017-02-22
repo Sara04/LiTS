@@ -39,20 +39,28 @@ void LiTS_preprocessor::preprocess(LiTS_scan *scan)
 
 		if (direction[1][1] < 0)
 		{
-			OrientVolumeType::Pointer orienter = OrientVolumeType::New();
-			orienter->SetGivenCoordinateDirection(direction);
-			orienter->SetInput(scan->get_volume());
+			OrientVolumeType::Pointer orienter_v = OrientVolumeType::New();
+			OrientSegmentationType::Pointer orienter_s = OrientSegmentationType::New();
+
+			orienter_v->SetGivenCoordinateDirection(direction);
+			orienter_v->SetInput(scan->get_volume());
+			orienter_s->SetGivenCoordinateDirection(direction);
+			orienter_s->SetInput(scan->get_segmentation());
 			direction[1][1] = 1;
-			orienter->SetDesiredCoordinateDirection(direction);
-			orienter->UpdateLargestPossibleRegion();
-			scan->set_volume(orienter->GetOutput());
+			orienter_v->SetDesiredCoordinateDirection(direction);
+			orienter_v->UpdateLargestPossibleRegion();
+			orienter_s->SetDesiredCoordinateDirection(direction);
+			orienter_s->UpdateLargestPossibleRegion();
+
+			scan->set_volume(orienter_v->GetOutput());
+			scan->set_segmentation(orienter_s->GetOutput());
 		}
 	}
 	else
 	{
-		VolumeType::SizeType size = ((scan->get_volume())->GetLargestPossibleRegion()).GetSize();
 		preprocess_cuda((scan->get_volume())->GetBufferPointer(),
-				        size[0], size[1], size[2],
+				        (scan->get_segmentation())->GetBufferPointer(),
+				        scan->get_height(), scan->get_width(), scan->get_depth(),
 				        direction[1][1] < 0,
 				        lower_threshold, upper_threshold, minimum_value, maximum_value);
 	}

@@ -14,12 +14,14 @@
 #include <itkIntensityWindowingImageFilter.h>
 #include <itkOrientImageFilter.h>
 
-typedef itk::Image<float, 3> VolumeType;
 typedef itk::IntensityWindowingImageFilter<VolumeType, VolumeType> RescalerType;
 typedef itk::OrientImageFilter<VolumeType, VolumeType> OrientVolumeType;
+typedef itk::OrientImageFilter<SegmentationType, SegmentationType> OrientSegmentationType;
+
 
 class LiTS_preprocessor
 {
+
 private:
 	float lower_threshold;
 	float upper_threshold;
