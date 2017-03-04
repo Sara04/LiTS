@@ -23,7 +23,7 @@ typedef itk::ImageFileReader<SegmentationType> SegmentationReaderType;
  * getting data pointer and setting pointers on new data;
  * getting and setting size of the data.
  *
- * Arguments:
+ * Attributes:
  * 		volume_path: path to the file containing volume
  * 		segmentation_path: path to the file containing segmentation
  * 			(ground truth)
@@ -42,10 +42,12 @@ typedef itk::ImageFileReader<SegmentationType> SegmentationReaderType;
  * 		h: volume height (front-back body direction)
  * 		w: volume width (left-right body direction)
  * 		d: volume depth (bottom-top body direction)
+ * 		h_voxel: voxel height (front-back body direction)
+ * 		w_voxel: voxel width (left-right body direction)
+ * 		d_voxel: voxel depth (bottom-top body direction)
  *
  * Methods:
  * 		LiTS_scan: constructor
- * 		~LiTS_scan: destructor
  * 		load_volume: loading volume file using volume_reader
  * 		load_segmentation: loading segmentation file using segmentation
  * 			reader
@@ -61,6 +63,9 @@ typedef itk::ImageFileReader<SegmentationType> SegmentationReaderType;
  * 			(left-right body direction)
  * 		get_depth: get depth of the volume/segmentation
  * 			(bottom-top body direction)
+ * 		get_voxel_height: get height of the voxels
+ * 		get_voxel_width: get width of the voxels
+ * 		get_voxel_depth: get depth of the voxels (slice distance)
  *
  * 		//Setters
  * 		set_volume: set volume member (set pointer to the volume data)
@@ -82,6 +87,7 @@ private:
 
 	std::string volume_path;
 	std::string segmentation_path;
+
 	VolumeType::Pointer volume = VolumeType::New();
 	SegmentationType::Pointer segmentation = SegmentationType::New();
 	SegmentationType::Pointer lungs = SegmentationType::New();
@@ -92,6 +98,10 @@ private:
 	int h;
 	int w;
 	int d;
+
+	float voxel_h;
+	float voxel_w;
+	float voxel_d;
 
 public:
 	LiTS_scan(std::string volume_path_, std::string segmentation_path_);
@@ -109,6 +119,10 @@ public:
 	int get_height();
 	int get_width();
 	int get_depth();
+
+	float get_voxel_height();
+	float get_voxel_width();
+	float get_voxel_depth();
 
 	void set_height(int h_);
 	void set_width(int w_);

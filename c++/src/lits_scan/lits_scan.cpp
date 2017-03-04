@@ -17,19 +17,6 @@ LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_)
 }
 
 /*
- * ~LiTS_scan destructor - resetting all class attributes
- * 		except smart pointers that will be destroyed by its destructor
- */
-LiTS_scan::~LiTS_scan()
-{
-	volume_path = "";
-	segmentation_path = "";
-	h = 0;
-	w = 0;
-	d = 0;
-}
-
-/*
  * load_volume: loading volume from the volume_path
  * 		using volume_reader
  */
@@ -61,12 +48,18 @@ void LiTS_scan::load_info()
 	VolumeType::RegionType volume_region = volume->GetLargestPossibleRegion();
 	SegmentationType::RegionType segment_region = segmentation->GetLargestPossibleRegion();
 
+	VolumeType::SpacingType spacing = volume->GetSpacing();
+
 	VolumeType::SizeType size_v = volume_region.GetSize();
 	SegmentationType::SizeType size_s = segment_region.GetSize();
 
 	h = size_v[0];
 	w = size_v[1];
 	d = size_v[2];
+
+	voxel_h = spacing[0];
+	voxel_w = spacing[1];
+	voxel_d = spacing[2];
 
 	if(size_v[0] != size_s[0] or size_v[1]!=size_s[1] or size_v[2]!=size_s[2])
 	{
@@ -127,6 +120,22 @@ int LiTS_scan::get_width(){return w;}
  * get_depth: returns volume/segmentation depth
  */
 int LiTS_scan::get_depth(){return d;}
+
+/*
+ * get_height: returns volume/segmentation height
+ */
+float LiTS_scan::get_voxel_height(){return voxel_h;}
+
+/*
+ * get_width: returns volume/segmentation width
+ */
+float LiTS_scan::get_voxel_width(){return voxel_w;}
+
+/*
+ * get_depth: returns volume/segmentation depth
+ */
+float LiTS_scan::get_voxel_depth(){return voxel_d;}
+
 
 /*
  * set_height: sets volume height
