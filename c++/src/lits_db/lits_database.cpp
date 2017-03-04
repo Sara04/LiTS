@@ -127,6 +127,7 @@ void LiTS_db::load_test_subject_names()
 				testing_subjects.push_back(subject_name);
 		}
 	}
+	n_test =  testing_subjects.size();
 }
 /*
  * train_data_split: splitting data into development, validation and
@@ -163,9 +164,9 @@ void LiTS_db::train_data_split(int split_ratio, int selection)
  */
 void LiTS_db::empty_split()
 {
-	n_train = 0;
+	n_develop = 0;
 	n_valid = 0;
-	n_test = 0;
+	n_eval = 0;
 	development_subjects.clear();
 	validation_subjects.clear();
 	evaluation_subjects.clear();
