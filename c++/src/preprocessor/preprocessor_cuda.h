@@ -7,13 +7,15 @@
 
 #ifndef PREPROCESSOR_CUDA_H_
 #define PREPROCESSOR_CUDA_H_
-#include <iostream>
 
+/*
+ * preprocess_cuda: normalize voxel intensities and flip volume and
+ * 		segmentation if necessary
+ */
 void preprocess_cuda(float *volume_cpu, unsigned char *segmentation_cpu,
 		             unsigned int h, unsigned int w, unsigned int d,
 		             bool change_direction,
                      float lower_threshold, float upper_threshold,
                      float minimum_value, float maximum_value);
-
 
 #endif /* PREPROCESSOR_CUDA_H_ */

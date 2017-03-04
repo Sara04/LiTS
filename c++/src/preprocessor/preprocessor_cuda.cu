@@ -1,6 +1,35 @@
 #include "preprocessor_cuda.h"
 
 
+/*
+ * cuda kernel
+ * gpu_normalization: normalize voxel intensities and flip volume and
+ * 		segmentation if necessary
+ *
+ * Arguments:
+ * 		cuda_volume: pointer to the array containing original
+ * 			volume
+ * 		cuda_volume_n: pointer to the array where normalized (and
+ * 			re-oriented, if necessary) volume would be placed
+ * 		cuda_segmentation: pointer to the array containing original
+ * 			segmentation
+ * 		cuda_segmentation_o: pointer to the array where re-oriented,
+ * 			if necessary, segmentation would be placed
+ * 		change_direction - flag indicating weather to change volume and
+ * 			segmentation orientation along front-back body axis
+ *
+ * 		lower_th_: lower limit for voxel intensity
+ * 		upper_th_: upper limit for voxel intensity
+ * 		minimum_value_: minimum voxel intensity value in the
+ * 			normalized voxel range
+ * 		maximum_value_: maximum voxel intensity value in the
+ * 			normalized voxel range
+ *
+ * 		????????????????????????????????????????????????????????????????
+ * 		Should be adapted to accept several volumes and/or segmentations
+ * 		at one time
+ * 		????????????????????????????????????????????????????????????????
+ */
 __global__ void gpu_normalization(float *cuda_volume, float *cuda_volume_n,
 		                          unsigned char *cuda_segmentation,
 		                          unsigned char *cuda_segmentation_o,
@@ -32,6 +61,38 @@ __global__ void gpu_normalization(float *cuda_volume, float *cuda_volume_n,
 				(upper_th_ - lower_th_) + minimum_value_;
 }
 
+/*
+ * preprocess_cuda: normalize voxel intensities and flip volume and
+ * 		segmentation if necessary
+ *
+ * Arguments:
+ * 		volume_cpu: pointer to the array containing volume
+ * 		segmentation_cpu: pointer to the array containing segmentation
+ * 		h - volume/segmentation height
+ * 		w - volume/segmentation width
+ * 		d - volume/segmentation depth
+ * 		change_direction - flag indicating weather to change volume and
+ * 			segmentation orientation along front-back body axis
+ *
+ * 		lower_threshold: lower limit for voxel intensity
+ * 		upper_threshold: upper limit for voxel intensity
+ * 		minimum_value: minimum voxel intensity value in the
+ * 			normalized voxel range
+ * 		maximum_value: maximum voxel intensity value in the
+ * 			normalized voxel range
+ * 		approach: selection between "itk" (cpu) and "cuda" (gpu)
+ * 			normalization
+ *
+ *
+ * 		????????????????????????????????????????????????????????????????
+ * 		Should be adapted to accept only volume
+ * 		Should be adapted to accept several volumes and/or segmentations
+ * 		at one time
+ * 		Should be changed in order to use all threads in block instead
+ * 		of the number corresponding volume/segmentation width
+ * 		????????????????????????????????????????????????????????????????
+ *
+ */
 void preprocess_cuda(float *input_volume, unsigned char *input_segmentation,
 		             unsigned int h, unsigned int w, unsigned int d,
 		             bool change_direction,
