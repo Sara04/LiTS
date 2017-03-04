@@ -17,6 +17,19 @@ LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_)
 }
 
 /*
+ * LiTS_scan constructor: assigning volume
+ * 		file paths
+ *
+ * Arguments:
+ * 		volume_path_: path to the volume file
+ *		segmentation_path: path to the segmentation (ground truth )file
+ */
+LiTS_scan::LiTS_scan(std::string volume_path_)
+{
+	volume_path = volume_path_;
+}
+
+/*
  * load_volume: loading volume from the volume_path
  * 		using volume_reader
  */
@@ -33,9 +46,17 @@ void LiTS_scan::load_volume()
  */
 void LiTS_scan::load_segmentation()
 {
-	segmentation_reader->SetFileName(segmentation_path);
-	segmentation_reader->Update();
-	segmentation = segmentation_reader->GetOutput();
+	if(segmentation_path.size())
+	{
+		segmentation_reader->SetFileName(segmentation_path);
+		segmentation_reader->Update();
+		segmentation = segmentation_reader->GetOutput();
+	}
+	else
+	{
+		std::cout<<"Segmentation path does not exist!"<<std::endl;
+		exit(EXIT_FAILURE);
+	}
 }
 
 /*
@@ -46,12 +67,8 @@ void LiTS_scan::load_segmentation()
 void LiTS_scan::load_info()
 {
 	VolumeType::RegionType volume_region = volume->GetLargestPossibleRegion();
-	SegmentationType::RegionType segment_region = segmentation->GetLargestPossibleRegion();
-
 	VolumeType::SpacingType spacing = volume->GetSpacing();
-
 	VolumeType::SizeType size_v = volume_region.GetSize();
-	SegmentationType::SizeType size_s = segment_region.GetSize();
 
 	h = size_v[0];
 	w = size_v[1];
@@ -61,11 +78,25 @@ void LiTS_scan::load_info()
 	voxel_w = spacing[1];
 	voxel_d = spacing[2];
 
-	if(size_v[0] != size_s[0] or size_v[1]!=size_s[1] or size_v[2]!=size_s[2])
+	if(segmentation_path.size())
 	{
-		std::cout<<"Volume path:"<<volume_path<<std::endl;
-		std::cout<<"Segmentation path:"<<segmentation_path<<std::endl;
-		std::cout<<"Volume and segmentation data are not compatible"<<"\n";
+		SegmentationType::RegionType segment_region = segmentation->GetLargestPossibleRegion();
+		SegmentationType::SizeType size_s = segment_region.GetSize();
+
+		if(size_s[0])
+		{
+			if(size_v[0] != size_s[0] or size_v[1]!=size_s[1] or size_v[2]!=size_s[2])
+			{
+				std::cout<<"Volume path:"<<volume_path<<std::endl;
+				std::cout<<"Segmentation path:"<<segmentation_path<<std::endl;
+				std::cout<<"Volume and segmentation data are not compatible"<<"\n";
+			}
+		}
+		else
+		{
+			std::cout<<"Segmentation is not loaded"<<std::endl;
+			exit(EXIT_FAILURE);
+		}
 	}
 }
 

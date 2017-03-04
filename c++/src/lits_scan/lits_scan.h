@@ -8,6 +8,7 @@
 #ifndef LITS_SCAN_H_
 #define LITS_SCAN_H_
 
+#include <iostream>
 #include <string>
 #include <itkImage.h>
 #include <itkImageFileReader.h>
@@ -90,7 +91,6 @@ private:
 
 	VolumeType::Pointer volume = VolumeType::New();
 	SegmentationType::Pointer segmentation = SegmentationType::New();
-	SegmentationType::Pointer lungs = SegmentationType::New();
 
 	VolumeReaderType::Pointer volume_reader = VolumeReaderType::New();
 	SegmentationReaderType::Pointer segmentation_reader = SegmentationReaderType::New();
@@ -105,7 +105,7 @@ private:
 
 public:
 	LiTS_scan(std::string volume_path_, std::string segmentation_path_);
-	~LiTS_scan();
+	LiTS_scan(std::string volume_path_);
 
 	void load_volume();
 	void load_segmentation();
