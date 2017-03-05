@@ -80,45 +80,45 @@ namespace fs = boost::filesystem;
 class LiTS_db
 {
 private:
-	std::string db_path;
-	std::vector<std::string> training_subjects;
-	std::vector<std::string> development_subjects;
-	std::vector<std::string> validation_subjects;
-	std::vector<std::string> evaluation_subjects;
-	std::vector<std::string> testing_subjects;
+    std::string db_path;
+    std::vector<std::string> training_subjects;
+    std::vector<std::string> development_subjects;
+    std::vector<std::string> validation_subjects;
+    std::vector<std::string> evaluation_subjects;
+    std::vector<std::string> testing_subjects;
 
-	int n_train;
-	int n_develop;
-	int n_valid;
-	int n_eval;
-	int n_test;
+    int n_train;
+    int n_develop;
+    int n_valid;
+    int n_eval;
+    int n_test;
 
 public:
-	LiTS_db(std::string db_path_);
+    LiTS_db(std::string db_path_);
 
-	void load_train_subject_names();
-	void load_test_subject_names();
-	void train_data_split(int split_ratio, int selection);
-	void empty_split();
+    void load_train_subject_names();
+    void load_test_subject_names();
+    void train_data_split(int split_ratio, int selection);
+    void empty_split();
 
-	int get_number_of_training();
-	int get_number_of_development();
-	int get_number_of_validation();
-	int get_number_of_evaluation();
-	int get_number_of_testing();
+    int get_number_of_training();
+    int get_number_of_development();
+    int get_number_of_validation();
+    int get_number_of_evaluation();
+    int get_number_of_testing();
 
-	std::string get_train_subject_name(int position);
-	std::string get_develop_subject_name(int position);
-	std::string get_valid_subject_name(int position);
-	std::string get_eval_subject_name(int position);
-	std::string get_test_subject_name(int position);
+    std::string get_train_subject_name(int position);
+    std::string get_develop_subject_name(int position);
+    std::string get_valid_subject_name(int position);
+    std::string get_eval_subject_name(int position);
+    std::string get_test_subject_name(int position);
 
-	void get_train_paths(const std::string subject_name,
-			             std::string &volume_path,
-			             std::string &segmentation_path);
+    void get_train_paths(const std::string subject_name,
+                         std::string &volume_path,
+                         std::string &segmentation_path);
 
-	void get_test_path(const std::string subject_name,
-			           std::string &volume_path);
+    void get_test_path(const std::string subject_name,
+                       std::string &volume_path);
 };
 
 #endif /* LITS_DATABASE_H_ */
