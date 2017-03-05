@@ -86,49 +86,50 @@ class LiTS_scan
 
 private:
 
-	std::string volume_path;
-	std::string segmentation_path;
+    std::string volume_path;
+    std::string segmentation_path;
 
-	VolumeType::Pointer volume = VolumeType::New();
-	SegmentationType::Pointer segmentation = SegmentationType::New();
+    VolumeType::Pointer volume = VolumeType::New();
+    SegmentationType::Pointer segmentation = SegmentationType::New();
 
-	VolumeReaderType::Pointer volume_reader = VolumeReaderType::New();
-	SegmentationReaderType::Pointer segmentation_reader = SegmentationReaderType::New();
+    VolumeReaderType::Pointer volume_reader = VolumeReaderType::New();
+    SegmentationReaderType::Pointer segmentation_reader =
+            SegmentationReaderType::New();
 
-	int h;
-	int w;
-	int d;
+    int h;
+    int w;
+    int d;
 
-	float voxel_h;
-	float voxel_w;
-	float voxel_d;
+    float voxel_h;
+    float voxel_w;
+    float voxel_d;
 
 public:
-	LiTS_scan(std::string volume_path_, std::string segmentation_path_);
-	LiTS_scan(std::string volume_path_);
 
-	void load_volume();
-	void load_segmentation();
-	void load_info();
+    LiTS_scan(std::string volume_path_, std::string segmentation_path_);
+    LiTS_scan(std::string volume_path_);
 
-	VolumeType::Pointer get_volume();
-	void set_volume(VolumeType::Pointer volume_);
-	SegmentationType::Pointer get_segmentation();
-	void set_segmentation(SegmentationType::Pointer segment_);
+    void load_volume();
+    void load_segmentation();
+    void load_info();
 
-	int get_height();
-	int get_width();
-	int get_depth();
+    VolumeType::Pointer get_volume();
+    void set_volume(VolumeType::Pointer volume_);
+    SegmentationType::Pointer get_segmentation();
+    void set_segmentation(SegmentationType::Pointer segment_);
 
-	float get_voxel_height();
-	float get_voxel_width();
-	float get_voxel_depth();
+    int get_height();
+    int get_width();
+    int get_depth();
 
-	void set_height(int h_);
-	void set_width(int w_);
-	void set_depth(int d_);
+    float get_voxel_height();
+    float get_voxel_width();
+    float get_voxel_depth();
+
+    void set_height(int h_);
+    void set_width(int w_);
+    void set_depth(int d_);
 
 };
-
 
 #endif /* LITS_SCAN_H_ */

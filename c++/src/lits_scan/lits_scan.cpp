@@ -1,6 +1,4 @@
-
 #include "lits_scan.h"
-
 
 /*
  * LiTS_scan constructor: assigning volume and segmentation
@@ -12,8 +10,8 @@
  */
 LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_)
 {
-	volume_path = volume_path_;
-	segmentation_path = segmentation_path_;
+    volume_path = volume_path_;
+    segmentation_path = segmentation_path_;
 }
 
 /*
@@ -22,11 +20,10 @@ LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_)
  *
  * Arguments:
  * 		volume_path_: path to the volume file
- *		segmentation_path: path to the segmentation (ground truth )file
  */
 LiTS_scan::LiTS_scan(std::string volume_path_)
 {
-	volume_path = volume_path_;
+    volume_path = volume_path_;
 }
 
 /*
@@ -35,9 +32,9 @@ LiTS_scan::LiTS_scan(std::string volume_path_)
  */
 void LiTS_scan::load_volume()
 {
-	volume_reader->SetFileName(volume_path);
-	volume_reader->Update();
-	volume = volume_reader->GetOutput();
+    volume_reader->SetFileName(volume_path);
+    volume_reader->Update();
+    volume = volume_reader->GetOutput();
 }
 
 /*
@@ -46,17 +43,17 @@ void LiTS_scan::load_volume()
  */
 void LiTS_scan::load_segmentation()
 {
-	if(segmentation_path.size())
-	{
-		segmentation_reader->SetFileName(segmentation_path);
-		segmentation_reader->Update();
-		segmentation = segmentation_reader->GetOutput();
-	}
-	else
-	{
-		std::cout<<"Segmentation path does not exist!"<<std::endl;
-		exit(EXIT_FAILURE);
-	}
+    if (segmentation_path.size())
+    {
+        segmentation_reader->SetFileName(segmentation_path);
+        segmentation_reader->Update();
+        segmentation = segmentation_reader->GetOutput();
+    }
+    else
+    {
+        std::cout << "Segmentation path does not exist!" << std::endl;
+        exit (EXIT_FAILURE);
+    }
 }
 
 /*
@@ -66,38 +63,42 @@ void LiTS_scan::load_segmentation()
  */
 void LiTS_scan::load_info()
 {
-	VolumeType::RegionType volume_region = volume->GetLargestPossibleRegion();
-	VolumeType::SpacingType spacing = volume->GetSpacing();
-	VolumeType::SizeType size_v = volume_region.GetSize();
+    VolumeType::RegionType volume_region = volume->GetLargestPossibleRegion();
+    VolumeType::SpacingType spacing = volume->GetSpacing();
+    VolumeType::SizeType size_v = volume_region.GetSize();
 
-	h = size_v[0];
-	w = size_v[1];
-	d = size_v[2];
+    h = size_v[0];
+    w = size_v[1];
+    d = size_v[2];
 
-	voxel_h = spacing[0];
-	voxel_w = spacing[1];
-	voxel_d = spacing[2];
+    voxel_h = spacing[0];
+    voxel_w = spacing[1];
+    voxel_d = spacing[2];
 
-	if(segmentation_path.size())
-	{
-		SegmentationType::RegionType segment_region = segmentation->GetLargestPossibleRegion();
-		SegmentationType::SizeType size_s = segment_region.GetSize();
+    if (segmentation_path.size())
+    {
+        SegmentationType::RegionType segment_region = segmentation
+                ->GetLargestPossibleRegion();
+        SegmentationType::SizeType size_s = segment_region.GetSize();
 
-		if(size_s[0])
-		{
-			if(size_v[0] != size_s[0] or size_v[1]!=size_s[1] or size_v[2]!=size_s[2])
-			{
-				std::cout<<"Volume path:"<<volume_path<<std::endl;
-				std::cout<<"Segmentation path:"<<segmentation_path<<std::endl;
-				std::cout<<"Volume and segmentation data are not compatible"<<"\n";
-			}
-		}
-		else
-		{
-			std::cout<<"Segmentation is not loaded"<<std::endl;
-			exit(EXIT_FAILURE);
-		}
-	}
+        if (size_s[0])
+        {
+            if (size_v[0] != size_s[0] or size_v[1] != size_s[1]
+                or size_v[2] != size_s[2])
+            {
+                std::cout << "Volume path:" << volume_path << std::endl;
+                std::cout << "Segmentation path:" << segmentation_path
+                          << std::endl;
+                std::cout << "Volume and segmentation data are not compatible"
+                          << "\n";
+            }
+        }
+        else
+        {
+            std::cout << "Segmentation is not loaded" << std::endl;
+            exit (EXIT_FAILURE);
+        }
+    }
 }
 
 /*
@@ -105,7 +106,7 @@ void LiTS_scan::load_info()
  */
 VolumeType::Pointer LiTS_scan::get_volume()
 {
-	return volume;
+    return volume;
 }
 
 /*
@@ -115,7 +116,7 @@ VolumeType::Pointer LiTS_scan::get_volume()
  */
 void LiTS_scan::set_volume(VolumeType::Pointer volume_)
 {
-	volume = volume_;
+    volume = volume_;
 }
 
 /*
@@ -123,7 +124,7 @@ void LiTS_scan::set_volume(VolumeType::Pointer volume_)
  */
 SegmentationType::Pointer LiTS_scan::get_segmentation()
 {
-	return segmentation;
+    return segmentation;
 }
 
 /*
@@ -134,39 +135,56 @@ SegmentationType::Pointer LiTS_scan::get_segmentation()
  */
 void LiTS_scan::set_segmentation(SegmentationType::Pointer segment_)
 {
-	segmentation = segment_;
+    segmentation = segment_;
 }
 
 /*
  * get_height: returns volume/segmentation height
  */
-int LiTS_scan::get_height(){return h;}
+int LiTS_scan::get_height()
+{
+    return h;
+}
 
 /*
  * get_width: returns volume/segmentation width
  */
-int LiTS_scan::get_width(){return w;}
+int LiTS_scan::get_width()
+{
+    return w;
+}
 
 /*
  * get_depth: returns volume/segmentation depth
  */
-int LiTS_scan::get_depth(){return d;}
+int LiTS_scan::get_depth()
+{
+    return d;
+}
 
 /*
  * get_height: returns volume/segmentation height
  */
-float LiTS_scan::get_voxel_height(){return voxel_h;}
+float LiTS_scan::get_voxel_height()
+{
+    return voxel_h;
+}
 
 /*
  * get_width: returns volume/segmentation width
  */
-float LiTS_scan::get_voxel_width(){return voxel_w;}
+float LiTS_scan::get_voxel_width()
+{
+    return voxel_w;
+}
 
 /*
  * get_depth: returns volume/segmentation depth
  */
-float LiTS_scan::get_voxel_depth(){return voxel_d;}
-
+float LiTS_scan::get_voxel_depth()
+{
+    return voxel_d;
+}
 
 /*
  * set_height: sets volume height
@@ -174,7 +192,10 @@ float LiTS_scan::get_voxel_depth(){return voxel_d;}
  * Arguments:
  * 		h_: height to be set
  */
-void LiTS_scan::set_height(int h_){h = h_;}
+void LiTS_scan::set_height(int h_)
+{
+    h = h_;
+}
 
 /*
  * set_width: sets volume width
@@ -182,7 +203,10 @@ void LiTS_scan::set_height(int h_){h = h_;}
  * Arguments:
  * 		w_: width to be set
  */
-void LiTS_scan::set_width(int w_){w = w_;}
+void LiTS_scan::set_width(int w_)
+{
+    w = w_;
+}
 
 /*
  * set_depth: sets volume depth
@@ -190,4 +214,7 @@ void LiTS_scan::set_width(int w_){w = w_;}
  * Arguments:
  * 		d_: depth to be set
  */
-void LiTS_scan::set_depth(int d_){d = d_;}
+void LiTS_scan::set_depth(int d_)
+{
+    d = d_;
+}
