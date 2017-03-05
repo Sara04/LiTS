@@ -23,11 +23,6 @@ void labeling_3d(const bool *mask, unsigned int *labeled,
                  const unsigned int *size, unsigned int *object_sizes,
                  unsigned int &label);
 
-void extract_lung_candidates(unsigned int *labeled,
-                             const unsigned int *sub_volume_size,
-                             unsigned int *object_sizes, unsigned int &label,
-                             bool *candidates, float &size_threshold);
-
 void center_of_mass(const unsigned int *labeled, const unsigned int *size,
                     unsigned int label, float &central_c, float &central_r,
                     float &central_s);
