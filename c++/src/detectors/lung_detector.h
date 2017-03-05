@@ -11,6 +11,32 @@
 #include "../lits_scan/lits_scan.h"
 #include "lung_detector_cuda.cuh"
 
+/*
+ * LiTS_lung_detector class for detecting binary mask
+ * that belongs to lungs. Segmentation of lungs is based
+ * on air voxel values, position of the segment with respect
+ * to the body bounds, size of the segment, position of the
+ * segment in the entire volume, relation of the segment with
+ * respect to another segments
+ *
+ * Attributes:
+ *      subsample_factor: factor by which volume would be
+ *          sub-sampled for certain processing steps in order
+ *          to reduce computational time
+ *      lung_volume_threshold: lower threshold for both lungs
+ *          in mm^3
+ *      air_threshold: threshold below which everything is
+ *          considered to be air
+ *      lung_assumed_center_n: assumed normalized mass center
+ *          of the both lungs together
+ *      body_bounds_th: side, front and back body bounds thresholds
+ *
+ * Methods:
+ *      LiTS_lung_detector: default and one constructor with all
+ *          parameters
+ *      lung_segmentation: method for extraction of the binary mask
+ *          corresponding to the both lung wings
+ */
 class LiTS_lung_detector
 {
 
@@ -35,8 +61,6 @@ public:
 	void lung_segmentation(LiTS_scan *scan);
 
 };
-
-
 
 
 #endif /* LUNG_DETECTOR_H_ */

@@ -52,6 +52,16 @@ LiTS_lung_detector::LiTS_lung_detector(unsigned int *subsample_factor_,
 	}
 }
 
+/*
+ * lung_segmentation: method for extraction of the binary mask
+ *          corresponding to the both lung wings
+ *
+ * Arguments:
+ *      scan: pointer to the LiTS_scan object that contains
+ *          pointer to the pre-processed volume array and
+ *          extracted info about voxel and volume size
+ *
+ */
 void LiTS_lung_detector::lung_segmentation(LiTS_scan *scan)
 {
 

@@ -27,33 +27,23 @@
  * 		segment_lungs: segmentation of lungs
  */
 
-bool is_in_body_box(const unsigned int *slice_bounds,
-		            unsigned int c_idx, unsigned int r_idx);
+bool is_in_body_box(const unsigned int *slice_bounds, unsigned int c_idx,
+        unsigned int r_idx);
 
-void remove_outside_body_air(bool *air_mask,
-		                     const unsigned int *size,
-		                     const unsigned int *bounds);
+void remove_outside_body_air(bool *air_mask, const unsigned int *size,
+        const unsigned int *bounds);
 
-void extract_lung_labels(const unsigned int *labeled,
-		                 bool *candidates,
-		                 const unsigned int *size,
-		                 const unsigned int *main_labels,
-		                 unsigned int count);
+void extract_lung_labels(const unsigned int *labeled, bool *candidates,
+        const unsigned int *size, const unsigned int *main_labels,
+        unsigned int count);
 
 void extract_lung_candidates(const unsigned int *labeled,
-		                     const unsigned int *size,
-		                     unsigned int *object_sizes,
-		                     unsigned int &label,
-		                     bool *candidates,
-		                     float &size_threshold);
+        const unsigned int *size, unsigned int *object_sizes,
+        unsigned int &label, bool *candidates, float &size_threshold);
 
-void segment_lungs(const float *volume,
-		           const unsigned int *volume_size,
-			       const unsigned int *subsample_factor,
-			       const float *lung_assumed_center_n,
-			       const unsigned int *body_bounds_th,
-			       float lung_volume_threshold,
-			       float air_threshold);
-
+void segment_lungs(const float *volume, const unsigned int *volume_size,
+        const unsigned int *subsample_factor,
+        const float *lung_assumed_center_n, const unsigned int *body_bounds_th,
+        float lung_volume_threshold, float air_threshold);
 
 #endif /* LUNG_DETECTOR_CUDA_CUH_ */
