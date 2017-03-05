@@ -1,4 +1,4 @@
-#include "preprocessor_cuda.h"
+#include "preprocessor_cuda.cuh"
 #include "lits_preprocessor.h"
 
 /*
