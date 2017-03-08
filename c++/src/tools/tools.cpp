@@ -208,14 +208,15 @@ void center_of_mass(const unsigned int *labeled, const unsigned int *size,
             r_idx = (i - s_idx * size[0] * size[1]) / size[0];
             c_idx = i - s_idx * size[0] * size[1] - r_idx * size[0];
 
-            central_s += s_idx;
-            central_r += r_idx;
-            central_c += c_idx;
+            central_s += float(s_idx) /size[2];
+            central_r += float(r_idx) /size[1];
+            central_c += float(c_idx) /size[0];
             count += 1;
         }
     }
-    central_c /= (count * size[0]);
-    central_r /= (count * size[1]);
-    central_s /= (count * size[2]);
+
+    central_c /= count;
+    central_r /= count;
+    central_s /= count;
 }
 
