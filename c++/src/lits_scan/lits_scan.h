@@ -91,6 +91,7 @@ private:
 
     VolumeType::Pointer volume = VolumeType::New();
     SegmentationType::Pointer segmentation = SegmentationType::New();
+    bool *lungs_mask;
 
     VolumeReaderType::Pointer volume_reader = VolumeReaderType::New();
     SegmentationReaderType::Pointer segmentation_reader =
@@ -108,6 +109,7 @@ public:
 
     LiTS_scan(std::string volume_path_, std::string segmentation_path_);
     LiTS_scan(std::string volume_path_);
+    ~LiTS_scan();
 
     void load_volume();
     void load_segmentation();
@@ -117,6 +119,8 @@ public:
     void set_volume(VolumeType::Pointer volume_);
     SegmentationType::Pointer get_segmentation();
     void set_segmentation(SegmentationType::Pointer segment_);
+    bool * get_lungs_mask();
+    void set_lungs_mask(bool *lungs_mask_);
 
     int get_height();
     int get_width();

@@ -12,6 +12,7 @@ LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_)
 {
     volume_path = volume_path_;
     segmentation_path = segmentation_path_;
+    lungs_mask = NULL;
 }
 
 /*
@@ -24,6 +25,17 @@ LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_)
 LiTS_scan::LiTS_scan(std::string volume_path_)
 {
     volume_path = volume_path_;
+    lungs_mask = NULL;
+}
+
+/*
+ * ~LiTS_scan destructor: if memory is allocated
+ *      for lungs_mask, release it
+ */
+LiTS_scan::~LiTS_scan()
+{
+    if(lungs_mask)
+        delete [] lungs_mask;
 }
 
 /*
@@ -136,6 +148,24 @@ SegmentationType::Pointer LiTS_scan::get_segmentation()
 void LiTS_scan::set_segmentation(SegmentationType::Pointer segment_)
 {
     segmentation = segment_;
+}
+
+/*
+ * get_lungs_mask: returns pointer to lungs_mask
+ */
+
+bool * LiTS_scan::get_lungs_mask()
+{
+    return lungs_mask;
+}
+
+/*
+ * set_lungs_mask: returns pointer to lungs_mask
+ */
+
+void LiTS_scan::set_lungs_mask(bool *lungs_mask_)
+{
+       lungs_mask = lungs_mask_;
 }
 
 /*
