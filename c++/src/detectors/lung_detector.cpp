@@ -1,4 +1,3 @@
-
 #include "lung_detector.h"
 
 /*
@@ -14,8 +13,8 @@
 LiTS_lung_detector::LiTS_lung_detector(float lung_volume_threshold_,
                                        float air_threshold_)
 {
-	lung_volume_threshold = lung_volume_threshold_;
-	air_threshold = air_threshold_;
+    lung_volume_threshold = lung_volume_threshold_;
+    air_threshold = air_threshold_;
 }
 
 /*
@@ -42,14 +41,14 @@ LiTS_lung_detector::LiTS_lung_detector(unsigned int *subsample_factor_,
                                        float *lung_assumed_center_n_,
                                        unsigned int *body_bounds_th_)
 {
-	lung_volume_threshold = lung_volume_threshold_;
-	air_threshold = air_threshold_;
-	for(unsigned int i = 0; i < 3; i++)
-	{
-		subsample_factor[i] = subsample_factor_[i];
-		lung_assumed_center_n[i] = lung_assumed_center_n_[i];
-		body_bounds_th[i] = body_bounds_th_[i];
-	}
+    lung_volume_threshold = lung_volume_threshold_;
+    air_threshold = air_threshold_;
+    for (unsigned int i = 0; i < 3; i++)
+    {
+        subsample_factor[i] = subsample_factor_[i];
+        lung_assumed_center_n[i] = lung_assumed_center_n_[i];
+        body_bounds_th[i] = body_bounds_th_[i];
+    }
 }
 
 /*
@@ -65,18 +64,20 @@ LiTS_lung_detector::LiTS_lung_detector(unsigned int *subsample_factor_,
 void LiTS_lung_detector::lung_segmentation(LiTS_scan *scan)
 {
 
-	float lung_volume_th_vox = lung_volume_threshold /
-			                   (scan->get_voxel_height() *
-			                    scan->get_voxel_width() *
-			                    scan->get_voxel_depth());
-	unsigned int size[] = {scan->get_width(),
-                           scan->get_height(),
-                           scan->get_depth()};
-	segment_lungs((scan->get_volume())->GetBufferPointer(),
-				  size,
-			      subsample_factor,
-			      lung_assumed_center_n,
-			      body_bounds_th,
-			      lung_volume_th_vox,
-			      air_threshold);
+    float lung_volume_th_vox = lung_volume_threshold /
+                               (scan->get_voxel_height() *
+                                scan->get_voxel_width() *
+                                scan->get_voxel_depth());
+
+    unsigned int size[3] = {scan->get_width(),
+                            scan->get_height(),
+                            scan->get_depth()};
+
+    bool *lungs_mask = new bool[size[0] * size[1] * size[2]];
+    segment_lungs((scan->get_volume())->GetBufferPointer(), size, lungs_mask,
+                  subsample_factor, lung_assumed_center_n, body_bounds_th,
+                  lung_volume_th_vox, air_threshold);
+
+    scan->set_lungs_mask(lungs_mask);
+
 }

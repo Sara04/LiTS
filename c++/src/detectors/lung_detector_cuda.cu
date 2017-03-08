@@ -3,6 +3,9 @@
 #include "../tools/tools.h"
 #include <iostream>
 
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
 /*
  * volume_air_segmentation_gpu: segmentation of the air regions
  *
@@ -239,7 +242,7 @@ void extract_lung_candidates(const unsigned int *labeled,
     //_______________________________________________________________________//
     unsigned int count = 0;
     unsigned int ng_f = 40;		// negligible segment size factor
-    unsigned int s_f = 20;      // segment size comparison factor
+    unsigned int s_f = 200;      // segment size comparison factor
     for (unsigned int i = 1; i < label; i++)
         count += (object_sizes[i - 1] > (size_threshold / ng_f));
     //_______________________________________________________________________//
@@ -385,9 +388,9 @@ void extract_lung_candidates(const unsigned int *labeled,
             for (unsigned int i = 0; i < count; i++)
             {
                 current_dist = sqrt(
-                        pow(central_c[i] - lung_assumed_c_n[0], 2) + pow(
-                                central_r[i] - lung_assumed_c_n[1], 2)
-                        + pow(central_s[i] - lung_assumed_c_n[2], 2));
+                        pow(central_c[i] - lung_assumed_c_n[0], 2) +
+                        pow(central_r[i] - lung_assumed_c_n[1], 2) +
+                        pow(central_s[i] - lung_assumed_c_n[2], 2));
                 if (current_dist < min_dist)
                 {
                     min_dist = current_dist;
@@ -402,23 +405,30 @@ void extract_lung_candidates(const unsigned int *labeled,
 
         // 3.3.4. Release memory from arrays containing position info
         //___________________________________________________________________//
-        end_detection2: delete[] central_c;
-        delete[] central_r;
-        delete[] central_s;
-        goto end_detection1;
+        end_detection2:
+        {
+            delete[] central_c;
+            delete[] central_r;
+            delete[] central_s;
+            goto end_detection1;
+        }
     }
     //_______________________________________________________________________//
 
     // 4. Release memory containing size and label info
     //_______________________________________________________________________//
 
-    end_detection1: delete[] main_candidates;
-    delete[] main_labels;
-    return;
+    end_detection1:
+    {
+        delete[] main_candidates;
+        delete[] main_labels;
+        return;
+    }
     //_______________________________________________________________________//
 }
 
 void segment_lungs(const float *volume, const unsigned int *volume_s,
+                   bool *lungs_mask,
                    const unsigned int *subsample_f,
                    const float *lung_assumed_center_n,
                    const unsigned int *body_bounds_th,
@@ -519,6 +529,7 @@ void segment_lungs(const float *volume, const unsigned int *volume_s,
                             const_cast<const unsigned int *>(s_volume_s),
                             object_sizes, label, candidates,
                             s_lung_volume_threshold, lung_assumed_center_n);
+
     delete[] labeled;
     delete[] object_sizes;
     //_______________________________________________________________________//
@@ -554,12 +565,11 @@ void segment_lungs(const float *volume, const unsigned int *volume_s,
 
     candidates = new bool[volume_l];
     extract_lung_candidates(const_cast<const unsigned int *>(labeled), volume_s,
-                            object_sizes, label, candidates,
+                            object_sizes, label, lungs_mask,
                             lung_volume_threshold, lung_assumed_center_n);
 
     delete[] object_sizes;
     delete[] labeled;
-    delete[] candidates;
     delete[] air_mask;
     //_______________________________________________________________________//
 }
