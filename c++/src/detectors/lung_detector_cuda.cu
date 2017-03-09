@@ -330,7 +330,7 @@ void extract_lung_candidates(const unsigned int *labeled,
 
         float center_c_th = 0.4;     // normalized column center threshold
         float center_r_th = 0.3;     // normalized row center threshold
-        float slice_th = 0.5;        // normalized slice threshold
+        float slice_th = 0.6;        // normalized slice threshold
         float size_f = 2.0;          // slice size factor
 
         if (central_c[0] < (1. - center_c_th) and central_c[0] > center_c_th
@@ -353,10 +353,10 @@ void extract_lung_candidates(const unsigned int *labeled,
             // 3.3.3.1 Verify if there is a pair of segments that most likely
             //         correspond to the lung wings
             //_______________________________________________________________//
-            float center_c_th = 0.4;    // normalized column center threshold
-            float center_r_d = 0.1;     // normalized row center distance
-                                        // threshold
-            float center_s_d = 0.1;     // normalized slice center distance
+            float center_c_th = 0.4;      // normalized column center threshold
+            float center_r_d = 0.15;     // normalized row center distance
+                                         // threshold
+            float center_s_d = 0.15;     // normalized slice center distance
                                         // threshold
 
             for (unsigned int i = 0; i < (count - 1); i++)
@@ -538,19 +538,22 @@ void segment_lungs(const float *volume, const unsigned int *volume_s,
     //_______________________________________________________________________//
 
     bool *candidates_gpu;
+    bool *mask_upsampled_gpu;
+    cudaMalloc((void **) &mask_upsampled_gpu, volume_l * sizeof(bool));
     cudaMalloc((void **) &candidates_gpu, s_volume_l * sizeof(bool));
     cudaMemcpy(candidates_gpu, candidates, s_volume_l * sizeof(bool),
                cudaMemcpyHostToDevice);
     delete[] candidates;
     upsample_gpu<bool> <<<grid_sub, s_volume_s[0]>>>(air_mask_gpu,
-            candidates_gpu,
-            subsample_f[0],
-            subsample_f[1],
-            subsample_f[2]);
+                                                     mask_upsampled_gpu,
+                                                     candidates_gpu,
+                                                     subsample_f[0],
+                                                     subsample_f[1],
+                                                     subsample_f[2]);
 
-    cudaMemcpy(air_mask, air_mask_gpu, volume_l * sizeof(bool),
+    cudaMemcpy(air_mask, mask_upsampled_gpu, volume_l * sizeof(bool),
                cudaMemcpyDeviceToHost);
-    cudaFree(air_mask_gpu);
+    cudaFree(mask_upsampled_gpu);
     cudaFree(candidates_gpu);
     //_______________________________________________________________________//
 
@@ -563,11 +566,27 @@ void segment_lungs(const float *volume, const unsigned int *volume_s,
     labeling_3d(const_cast<const bool *>(air_mask), labeled, volume_s,
                 object_sizes, label);
 
-    candidates = new bool[volume_l];
     extract_lung_candidates(const_cast<const unsigned int *>(labeled), volume_s,
                             object_sizes, label, lungs_mask,
                             lung_volume_threshold, lung_assumed_center_n);
 
+    bool *lungs_mask_gpu;
+    cudaMalloc((void **)&lungs_mask_gpu,volume_l * sizeof(bool));
+    cudaMemcpy(lungs_mask_gpu, lungs_mask, volume_l * sizeof(bool),
+               cudaMemcpyHostToDevice);
+
+    unsigned int up = subsample_f[1];
+    if(subsample_f[0] > subsample_f[1])
+        up = subsample_f[0];
+
+    for(unsigned int i = 0; i < up; i++)
+        refine_detection<bool><<<grid,volume_s[0]>>>(lungs_mask_gpu,
+                                                     air_mask_gpu);
+
+    cudaMemcpy(lungs_mask, lungs_mask_gpu, volume_l * sizeof(bool),
+               cudaMemcpyDeviceToHost);
+    cudaFree(air_mask_gpu);
+    cudaFree(lungs_mask_gpu);
     delete[] object_sizes;
     delete[] labeled;
     delete[] air_mask;
