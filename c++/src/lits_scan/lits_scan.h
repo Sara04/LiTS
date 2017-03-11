@@ -46,6 +46,8 @@ typedef itk::ImageFileReader<SegmentationType> SegmentationReaderType;
  * 		h_voxel: voxel height (front-back body direction)
  * 		w_voxel: voxel width (left-right body direction)
  * 		d_voxel: voxel depth (bottom-top body direction)
+ * 		axes_order: order of volume's axes
+ * 		axes_orientation: orientation of volume's axes
  *
  * Methods:
  * 		LiTS_scan: constructor
@@ -67,6 +69,8 @@ typedef itk::ImageFileReader<SegmentationType> SegmentationReaderType;
  * 		get_voxel_height: get height of the voxels
  * 		get_voxel_width: get width of the voxels
  * 		get_voxel_depth: get depth of the voxels (slice distance)
+ * 		get_axes_order: get the order of axes
+ * 		get_axes_orientation: get the orientations of axes
  *
  * 		//Setters
  * 		set_volume: set volume member (set pointer to the volume data)
@@ -78,6 +82,8 @@ typedef itk::ImageFileReader<SegmentationType> SegmentationReaderType;
  * 			(left-right body direction)
  * 		set_depth: set depth of the volume/segmentation
  * 			(bottom-top body direction)
+ * 		set_axes_order: set the order of axes
+ * 		set_axes_orientation: set the orientation of axes
  *
  *		//Writers/savers to be done...
  */
@@ -105,6 +111,9 @@ private:
     float voxel_w;
     float voxel_d;
 
+    unsigned int axes_order[3];
+    short axes_orientation[3];
+
 public:
 
     LiTS_scan(std::string volume_path_, std::string segmentation_path_);
@@ -130,9 +139,15 @@ public:
     float get_voxel_width();
     float get_voxel_depth();
 
+    unsigned int * get_axes_order();
+    short int * get_axes_orientation();
+
     void set_height(int h_);
     void set_width(int w_);
     void set_depth(int d_);
+
+    void set_axes_order(unsigned int *order);
+    void set_axes_orientation(short *orientation);
 
 };
 

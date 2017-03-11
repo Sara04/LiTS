@@ -13,6 +13,12 @@ LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_)
     volume_path = volume_path_;
     segmentation_path = segmentation_path_;
     lungs_mask = NULL;
+
+    for(unsigned int i = 0; i < 3; i++)
+    {
+        axes_order[i] = i;
+        axes_orientation[i] = 1;
+    }
 }
 
 /*
@@ -26,6 +32,12 @@ LiTS_scan::LiTS_scan(std::string volume_path_)
 {
     volume_path = volume_path_;
     lungs_mask = NULL;
+
+    for(unsigned int i = 0; i < 3; i++)
+    {
+        axes_order[i] = i;
+        axes_orientation[i] = 1;
+    }
 }
 
 /*
@@ -78,14 +90,35 @@ void LiTS_scan::load_info()
     VolumeType::RegionType volume_region = volume->GetLargestPossibleRegion();
     VolumeType::SpacingType spacing = volume->GetSpacing();
     VolumeType::SizeType size_v = volume_region.GetSize();
+    VolumeType::DirectionType direction_v = volume->GetDirection();
 
-    h = size_v[0];
-    w = size_v[1];
-    d = size_v[2];
+    for(unsigned int i = 0; i < 3; i++)
+    {
+        for(unsigned int j = 0; j < 3; j++)
+        {
+            if(direction_v[i][j] != 0)
+            {
+                axes_order[i] = j;
+                axes_orientation[i] = short(direction_v[i][j]);
+            }
+        }
+    }
 
-    voxel_h = spacing[0];
-    voxel_w = spacing[1];
-    voxel_d = spacing[2];
+    h = size_v[axes_order[0]];
+    w = size_v[axes_order[1]];
+    d = size_v[axes_order[2]];
+
+    voxel_h = spacing[axes_order[0]];
+    voxel_w = spacing[axes_order[1]];
+    voxel_d = spacing[axes_order[2]];
+
+    std::cout<<"height:"<<h<<std::endl;
+    std::cout<<"width:"<<w<<std::endl;
+    std::cout<<"no slices:"<<d<<std::endl;
+
+    std::cout<<"voxel height:"<<voxel_h<<std::endl;
+    std::cout<<"voxel width:"<<voxel_w<<std::endl;
+    std::cout<<"voxel no slices:"<<voxel_d<<std::endl;
 
     if (segmentation_path.size())
     {
@@ -162,10 +195,45 @@ bool * LiTS_scan::get_lungs_mask()
 /*
  * set_lungs_mask: returns pointer to lungs_mask
  */
-
 void LiTS_scan::set_lungs_mask(bool *lungs_mask_)
 {
        lungs_mask = lungs_mask_;
+}
+
+/*
+ * get_axes_order: returns pointer to axes order
+ */
+unsigned int * LiTS_scan::get_axes_order()
+{
+    return axes_order;
+}
+
+/*
+ * set_axes_order: sets order of axes
+ */
+void LiTS_scan::set_axes_order(unsigned int *order)
+{
+    for(unsigned int i = 0; i < 3; i++)
+        axes_order[i] = order[i];
+}
+
+/*
+ * get_axes_orientation: returns pointer to axes
+ * orientation
+ */
+short int * LiTS_scan::get_axes_orientation()
+{
+    return axes_orientation;
+}
+
+/*
+ * set_axes_orientation: sets orientation of the
+ * axes
+ */
+void LiTS_scan::set_axes_orientation(short *orientation)
+{
+    for(unsigned int i = 0; i < 3; i++)
+        axes_orientation[i] = orientation[i];
 }
 
 /*
