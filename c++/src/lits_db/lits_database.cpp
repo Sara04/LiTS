@@ -345,6 +345,6 @@ void LiTS_db::get_train_paths(const std::string subject_name,
 void LiTS_db::get_test_path(const std::string subject_name,
                             std::string &volume_path)
 {
-    volume_path = db_path + "/Testing Batch" + "/volume-test-" + subject_name
+    volume_path = db_path + "/Testing Batch" + "/test-volume-" + subject_name
                   + ".nii";
 }
