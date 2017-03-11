@@ -3,9 +3,6 @@
 #include "../tools/tools.h"
 #include <iostream>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
 /*
  * volume_air_segmentation_gpu: segmentation of the air regions
  *
