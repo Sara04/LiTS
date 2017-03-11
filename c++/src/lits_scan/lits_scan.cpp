@@ -97,11 +97,9 @@ void LiTS_scan::load_info()
         for(unsigned int j = 0; j < 3; j++)
         {
             if(direction_v[i][j] != 0)
-            {
                 axes_order[i] = j;
-                axes_orientation[i] = short(direction_v[i][j]);
-            }
         }
+        axes_orientation[axes_order[i]] = direction_v[i][axes_order[i]];
     }
 
     h = size_v[axes_order[0]];
@@ -111,14 +109,6 @@ void LiTS_scan::load_info()
     voxel_h = spacing[axes_order[0]];
     voxel_w = spacing[axes_order[1]];
     voxel_d = spacing[axes_order[2]];
-
-    std::cout<<"height:"<<h<<std::endl;
-    std::cout<<"width:"<<w<<std::endl;
-    std::cout<<"no slices:"<<d<<std::endl;
-
-    std::cout<<"voxel height:"<<voxel_h<<std::endl;
-    std::cout<<"voxel width:"<<voxel_w<<std::endl;
-    std::cout<<"voxel no slices:"<<voxel_d<<std::endl;
 
     if (segmentation_path.size())
     {
