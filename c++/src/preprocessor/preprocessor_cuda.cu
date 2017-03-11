@@ -1,4 +1,7 @@
 #include "preprocessor_cuda.cuh"
+#define MAX_THREADS 1024
+
+#include <iostream>
 
 /*
  * cuda kernel
@@ -14,9 +17,13 @@
  * 			segmentation
  * 		cuda_segmentation_o: pointer to the array where re-oriented,
  * 			if necessary, segmentation would be placed
- * 		change_direction - flag indicating weather to change volume and
- * 			segmentation orientation along front-back body axis
- *
+ * 		segmentation_flag: flag indicating if segmentation exists
+ * 		    and if so if its axes should be ordered or flipped
+ *      w - volume/segmentation width
+ *      h - volume/segmentation height
+ *      d - volume/segmentation number of slices
+ *      order0, order1, order2 - order of axes
+ *      orient0, orient1, orient2 - orientation of ordered axes
  * 		lower_th_: lower limit for voxel intensity
  * 		upper_th_: upper limit for voxel intensity
  * 		minimum_value_: minimum voxel intensity value in the
@@ -24,40 +31,52 @@
  * 		maximum_value_: maximum voxel intensity value in the
  * 			normalized voxel range
  *
- * 		????????????????????????????????????????????????????????????????
- * 		Should be adapted to accept several volumes and/or segmentations
- * 		at one time
- * 		????????????????????????????????????????????????????????????????
  */
 __global__ void gpu_normalization(float *cuda_volume, float *cuda_volume_n,
                                   unsigned char *cuda_segmentation,
                                   unsigned char *cuda_segmentation_o,
-                                  bool change_direction, float lower_th_,
-                                  float upper_th_, float minimum_value_,
-                                  float maximum_value_)
+                                  bool segmentation_flag,
+                                  unsigned w, unsigned h, unsigned d,
+                                  unsigned ord0, unsigned ord1, unsigned ord2,
+                                  short orient0, short orient1, short orient2,
+                                  float lower_th_, float upper_th_,
+                                  float minimum_value_, float maximum_value_)
 {
-    unsigned int in_idx = blockIdx.y * gridDim.x * blockDim.x
-            + blockIdx.x * blockDim.x + threadIdx.x;
-    unsigned int out_idx;
+    unsigned int t = (ord0 == 0) * w + (ord1 == 0) * h + (ord2 == 0) * d;
 
-    if (change_direction)
+    if(threadIdx.x < t)
     {
-        out_idx = blockIdx.y * gridDim.x * blockDim.x
-                + (gridDim.x - blockIdx.x - 1) * blockDim.x + threadIdx.x;
-        cuda_segmentation_o[out_idx] = cuda_segmentation[in_idx];
-    }
-    else
-        out_idx = in_idx;
+        unsigned int in_idx = blockIdx.y * gridDim.x * t +
+                              blockIdx.x * t + threadIdx.x;
+        unsigned int out_idx = 0;
 
-    if (cuda_volume[in_idx] < lower_th_)
-        cuda_volume_n[out_idx] = minimum_value_;
-    else if (cuda_volume[in_idx] > upper_th_)
-        cuda_volume_n[out_idx] = maximum_value_;
-    else
-        cuda_volume_n[out_idx] = (cuda_volume[in_idx] - lower_th_)
-                * (maximum_value_ - minimum_value_)
-                                 / (upper_th_ - lower_th_)
-                                 + minimum_value_;
+        unsigned int crs[3] = {threadIdx.x, blockIdx.x, blockIdx.y};
+
+        out_idx += crs[ord0];
+
+        if(orient1 == 1)
+            out_idx += crs[ord1] * w;
+        else
+            out_idx += (h - 1 - crs[ord1]) * w;
+
+        if(orient2 == 1)
+            out_idx += crs[ord2] * h * w;
+        else
+            out_idx += (d - 1 - crs[ord2]) * w * h;
+
+        if (cuda_volume[in_idx] < lower_th_)
+            cuda_volume_n[out_idx] = minimum_value_;
+        else if (cuda_volume[in_idx] > upper_th_)
+            cuda_volume_n[out_idx] = maximum_value_;
+        else
+            cuda_volume_n[out_idx] = (cuda_volume[in_idx] - lower_th_) *
+                                     (maximum_value_ - minimum_value_) /
+                                     (upper_th_ - lower_th_) + minimum_value_;
+
+        if(segmentation_flag)
+            cuda_segmentation_o[out_idx] = cuda_segmentation[in_idx];
+
+    }
 }
 
 /*
@@ -70,9 +89,8 @@ __global__ void gpu_normalization(float *cuda_volume, float *cuda_volume_n,
  * 		h - volume/segmentation height
  * 		w - volume/segmentation width
  * 		d - volume/segmentation depth
- * 		change_direction - flag indicating weather to change volume and
- * 			segmentation orientation along front-back body axis
- *
+ *      order - order of axes
+ *      orient - orientation of axes
  * 		lower_threshold: lower limit for voxel intensity
  * 		upper_threshold: upper limit for voxel intensity
  * 		minimum_value: minimum voxel intensity value in the
@@ -82,23 +100,23 @@ __global__ void gpu_normalization(float *cuda_volume, float *cuda_volume_n,
  * 		approach: selection between "itk" (cpu) and "cuda" (gpu)
  * 			normalization
  *
- *
- * 		????????????????????????????????????????????????????????????????
- * 		Should be adapted to accept only volume
- * 		Should be adapted to accept several volumes and/or segmentations
- * 		at one time
- * 		Should be changed in order to use all threads in block instead
- * 		of the number corresponding volume/segmentation width
- * 		????????????????????????????????????????????????????????????????
- *
  */
 void preprocess_cuda(float *input_volume, unsigned char *input_segmentation,
                      unsigned int h, unsigned int w, unsigned int d,
-                     bool change_direction, float lower_threshold,
-                     float upper_threshold, float minimum_value,
-                     float maximum_value)
+                     unsigned int *order, short *orient,
+                     float lower_threshold, float upper_threshold,
+                     float minimum_value, float maximum_value)
 {
-
+    short desired_orientation[3] = {0, 1, 1};
+    bool reorient = false;
+    bool permute = false;
+    for(unsigned int i = 1; i < 3; i++)
+    {
+        if(orient[i] != desired_orientation[i])
+            reorient = true;
+        if(order[i] != i)
+            permute = true;
+    }
     float *cuda_volume;
     float *cuda_volume_n;
     unsigned int volume_bytes = h * w * d * sizeof(float);
@@ -107,11 +125,11 @@ void preprocess_cuda(float *input_volume, unsigned char *input_segmentation,
     cudaMalloc((void **) &cuda_volume_n, volume_bytes);
     cudaMemcpy(cuda_volume, input_volume, volume_bytes,
                cudaMemcpyHostToDevice);
-
     unsigned char *cuda_segmentation;
     unsigned char *cuda_segmentation_o;
     unsigned int segment_bytes = sizeof(unsigned char);
-    if (change_direction)
+
+    if ((reorient or permute) and input_segmentation)
     {
         segment_bytes *= (h * w * d);
         cudaMalloc((void **) &cuda_segmentation, segment_bytes);
@@ -120,20 +138,30 @@ void preprocess_cuda(float *input_volume, unsigned char *input_segmentation,
                    cudaMemcpyHostToDevice);
     }
 
-    dim3 grid(h, d);
+    unsigned int i1, i2;
+    i1 = (order[1] == 0) * w + (order[1] == 1) * h + (order[1] == 2) * d;
+    i2 = (order[2] == 0) * w + (order[2] == 1) * h + (order[2] == 2) * d;
 
-    gpu_normalization<<<grid, w>>>(cuda_volume, cuda_volume_n,
-                                   cuda_segmentation, cuda_segmentation_o,
-                                   change_direction,
-                                   lower_threshold, upper_threshold,
-                                   minimum_value, maximum_value);
+    dim3 grid(i1, i2);
+
+    gpu_normalization<<<grid, MAX_THREADS>>>(cuda_volume,
+                                             cuda_volume_n,
+                                             cuda_segmentation,
+                                             cuda_segmentation_o,
+                                             (reorient or permute) and
+                                             input_segmentation,
+                                             w, h, d,
+                                             order[0], order[1], order[2],
+                                             orient[0], orient[1], orient[2],
+                                             lower_threshold, upper_threshold,
+                                             minimum_value, maximum_value);
 
     cudaMemcpy(input_volume, cuda_volume_n, volume_bytes,
                cudaMemcpyDeviceToHost);
     cudaFree(cuda_volume);
     cudaFree(cuda_volume_n);
 
-    if (change_direction)
+    if ((reorient or permute) and input_segmentation)
     {
         cudaMemcpy(input_segmentation, cuda_segmentation_o, segment_bytes,
                    cudaMemcpyDeviceToHost);
