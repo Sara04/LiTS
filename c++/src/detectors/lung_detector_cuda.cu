@@ -2,6 +2,7 @@
 #include "../tools/tools_cuda.cuh"
 #include "../tools/tools.h"
 #include <iostream>
+#define MAX_THREADS 1024
 
 /*
  * volume_air_segmentation_gpu: segmentation of the air regions
@@ -37,71 +38,65 @@ __global__ void volume_air_segmentation_gpu(const float *volume,
  */
 __global__ void detect_body_bounds_gpu(const bool *air_mask,
                                        unsigned int *bounds,
+                                       unsigned int w,
+                                       unsigned int h,
+                                       unsigned int d,
                                        unsigned int side_threshold,
                                        unsigned int front_threshold,
                                        unsigned int back_threshold)
 {
 
-    __shared__ unsigned int h_sum[512];
-    __shared__ unsigned int v_sum[512];
+    __shared__ unsigned int h_sum[MAX_THREADS];
+    __shared__ unsigned int v_sum[MAX_THREADS];
 
     if (threadIdx.x == 0)
     {
         bounds[blockIdx.x] = 0;
-        bounds[blockIdx.x + gridDim.x] = blockDim.x - 1;
-        bounds[blockIdx.x + 2 * gridDim.x] = 0;
-        bounds[blockIdx.x + 3 * gridDim.x] = blockDim.x - 1;
+        bounds[blockIdx.x + d] = w - 1;
+        bounds[blockIdx.x + 2 * d] = 0;
+        bounds[blockIdx.x + 3 * d] = h - 1;
     }
 
-    float h_c = 0;
-    float v_c = 0;
-
-    unsigned int h_idx = blockIdx.x * blockDim.x * blockDim.x
-            + threadIdx.x * blockDim.x;
-    unsigned int v_idx = blockIdx.x * blockDim.x * blockDim.x + threadIdx.x;
-
-    for (unsigned int i = 0; i < blockDim.x; i++)
+    if(threadIdx.x < w)
     {
-        v_c += (air_mask[h_idx + i] == 0);
-        h_c += (air_mask[v_idx + i * blockDim.x] == 0);
+        float h_c = 0;
+        unsigned int v_idx = blockIdx.x * w * h + threadIdx.x;
+        for (unsigned int i = 0; i < h; i++)
+            h_c += (air_mask[v_idx + i * w] == 0);
+        h_sum[threadIdx.x] = h_c;
     }
 
-    h_sum[threadIdx.x] = h_c;
-    v_sum[threadIdx.x] = v_c;
+    if(threadIdx.x < h)
+    {
+        float v_c = 0;
+        unsigned int h_idx = blockIdx.x * w * h + threadIdx.x * w;
+        for (unsigned int i = 0; i < w; i++)
+            v_c += (air_mask[h_idx + i] == 0);
+        v_sum[threadIdx.x] = v_c;
+    }
 
     __syncthreads();
 
     if (threadIdx.x == 0)
     {
-        for (unsigned int i = 0; i < blockDim.x; i++)
+        unsigned int m = w;
+        if(h > m)
+            m = h;
+        for (unsigned int i = 0; i < m; i++)
         {
 
-            if (i < (blockDim.x / 2))
-            {
-                if (i > bounds[blockIdx.x])
-                {
-                    if (h_sum[i] < side_threshold)
-                        bounds[blockIdx.x] = i;
-                }
-                if (i > bounds[blockIdx.x + 2 * gridDim.x])
-                {
-                    if (v_sum[i] < front_threshold)
-                        bounds[blockIdx.x + 2 * gridDim.x] = i;
-                }
-            }
-            if (i >= (blockDim.x / 2))
-            {
-                if (i <= bounds[blockIdx.x + gridDim.x])
-                {
-                    if (h_sum[i] < side_threshold)
-                        bounds[blockIdx.x + gridDim.x] = i;
-                }
-                if (i <= bounds[blockIdx.x + 3 * gridDim.x])
-                {
-                    if (v_sum[i] < back_threshold)
-                        bounds[blockIdx.x + 3 * gridDim.x] = i;
-                }
-            }
+            if (i < (w / 2) and i > bounds[blockIdx.x])
+                if (h_sum[i] < side_threshold)
+                    bounds[blockIdx.x] = i;
+            if (i < (h / 2) and i > bounds[blockIdx.x + 2 * d])
+                if (v_sum[i] < front_threshold)
+                    bounds[blockIdx.x + 2 * gridDim.x] = i;
+            if (i >= (w / 2) and i <= bounds[blockIdx.x + d] and i < w)
+                if (h_sum[i] < side_threshold)
+                    bounds[blockIdx.x + d] = i;
+            if (i >= (h / 2) and i <= bounds[blockIdx.x + 3 * d] and i < h)
+                if (v_sum[i] < back_threshold)
+                    bounds[blockIdx.x + 3 * d] = i;
         }
     }
 }
@@ -426,7 +421,7 @@ void extract_lung_candidates(const unsigned int *labeled,
 
 void segment_lungs(const float *volume, const unsigned int *volume_s,
                    bool *lungs_mask, unsigned int *bounds,
-                   const unsigned int *subsample_f,
+                   const unsigned int *subs_f,
                    const float *lung_assumed_center_n,
                    const unsigned int *body_bounds_th,
                    float lung_volume_threshold, float air_threshold)
@@ -457,6 +452,9 @@ void segment_lungs(const float *volume, const unsigned int *volume_s,
     cudaMalloc((void **) &bounds_gpu, 4 * volume_s[2] * sizeof(unsigned int));
     detect_body_bounds_gpu<<<volume_s[2], volume_s[0]>>>(air_mask_gpu,
             bounds_gpu,
+            volume_s[0],
+            volume_s[1],
+            volume_s[2],
             body_bounds_th[0],
             body_bounds_th[1],
             body_bounds_th[2]);
@@ -468,9 +466,9 @@ void segment_lungs(const float *volume, const unsigned int *volume_s,
     // 3. Sub-sample air mask for further processing
     //_______________________________________________________________________//
 
-    unsigned int s_volume_s[3] = {volume_s[0] / subsample_f[0], volume_s[1]
-            / subsample_f[1],
-                                  volume_s[2] / subsample_f[2]};
+    unsigned int s_volume_s[3] = {volume_s[0] / subs_f[0],
+                                  volume_s[1] / subs_f[1],
+                                  volume_s[2] / subs_f[2]};
     unsigned int s_volume_l = s_volume_s[0] * s_volume_s[1] * s_volume_s[2];
 
     bool *air_mask_sub = new bool[s_volume_l];
@@ -479,27 +477,26 @@ void segment_lungs(const float *volume, const unsigned int *volume_s,
     cudaMalloc((void **) &air_mask_sub_gpu, s_volume_l * sizeof(bool));
     dim3 grid_sub(s_volume_s[1], s_volume_s[2]);
     subsample_gpu<bool> <<<grid_sub, s_volume_s[0]>>>(air_mask_gpu,
-            air_mask_sub_gpu,
-            subsample_f[0],
-            subsample_f[1],
-            subsample_f[2]);
+                                                      air_mask_sub_gpu,
+                                                      subs_f[0],
+                                                      subs_f[1],
+                                                      subs_f[2]);
     cudaMemcpy(air_mask_sub, air_mask_sub_gpu, s_volume_l * sizeof(bool),
                cudaMemcpyDeviceToHost);
     cudaFree(air_mask_sub_gpu);
-
     //_______________________________________________________________________//
 
     // 4. Remove outside body air
     //_______________________________________________________________________//
 
     unsigned int *bounds_sub = new unsigned int[4 * s_volume_s[2]];
-
-    for (unsigned int i = 0; i < 4 * volume_s[2]; i += subsample_f[2])
-        bounds_sub[i] = bounds[i] / subsample_f[i < 2 * volume_s[2]];
+    for (unsigned int i = 0; i < 2 * volume_s[2]; i += subs_f[2])
+        bounds_sub[i] = bounds[i] / subs_f[0];
+    for (unsigned int i = 2 * volume_s[2]; i < 4 * volume_s[2]; i += subs_f[2])
+        bounds_sub[i] = bounds[i] / subs_f[1];
 
     remove_outside_body_air(air_mask_sub, s_volume_s, bounds_sub);
     delete[] bounds_sub;
-
     //_______________________________________________________________________//
 
     // 5. Labeling in body air
@@ -519,7 +516,7 @@ void segment_lungs(const float *volume, const unsigned int *volume_s,
 
     bool *candidates = new bool[s_volume_l];
     float s_lung_volume_threshold = lung_volume_threshold
-            / (subsample_f[0] * subsample_f[1] * subsample_f[2]);
+            / (subs_f[0] * subs_f[1] * subs_f[2]);
     extract_lung_candidates(const_cast<const unsigned int *>(labeled),
                             const_cast<const unsigned int *>(s_volume_s),
                             object_sizes, label, candidates,
@@ -542,9 +539,9 @@ void segment_lungs(const float *volume, const unsigned int *volume_s,
     upsample_gpu<bool> <<<grid_sub, s_volume_s[0]>>>(air_mask_gpu,
                                                      mask_upsampled_gpu,
                                                      candidates_gpu,
-                                                     subsample_f[0],
-                                                     subsample_f[1],
-                                                     subsample_f[2]);
+                                                     subs_f[0],
+                                                     subs_f[1],
+                                                     subs_f[2]);
 
     cudaMemcpy(air_mask, mask_upsampled_gpu, volume_l * sizeof(bool),
                cudaMemcpyDeviceToHost);
@@ -570,9 +567,9 @@ void segment_lungs(const float *volume, const unsigned int *volume_s,
     cudaMemcpy(lungs_mask_gpu, lungs_mask, volume_l * sizeof(bool),
                cudaMemcpyHostToDevice);
 
-    unsigned int up = subsample_f[1];
-    if(subsample_f[0] > subsample_f[1])
-        up = subsample_f[0];
+    unsigned int up = subs_f[1];
+    if(subs_f[0] > subs_f[1])
+        up = subs_f[0];
 
     for(unsigned int i = 0; i < up; i++)
         refine_detection<bool><<<grid,volume_s[0]>>>(lungs_mask_gpu,
