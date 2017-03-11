@@ -98,6 +98,7 @@ private:
     VolumeType::Pointer volume;
     SegmentationType::Pointer segmentation;
     bool *lungs_mask;
+    unsigned int *body_bounds;
 
     VolumeReaderType::Pointer volume_reader;
     SegmentationReaderType::Pointer segmentation_reader;
@@ -129,6 +130,8 @@ public:
     void set_segmentation(SegmentationType::Pointer segment_);
     bool * get_lungs_mask();
     void set_lungs_mask(bool *lungs_mask_);
+    unsigned int * get_body_bounds();
+    void set_body_bounds(unsigned int *body_bounds_);
 
     int get_height();
     int get_width();

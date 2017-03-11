@@ -43,7 +43,7 @@ void extract_lung_candidates(const unsigned int *labeled,
                              bool *candidates, float &size_threshold);
 
 void segment_lungs(const float *volume, const unsigned int *volume_size,
-                   bool *lungs_mask,
+                   bool *lungs_mask, unsigned int *bounds,
                    const unsigned int *subsample_factor,
                    const float *lung_assumed_center_n,
                    const unsigned int *body_bounds_th,

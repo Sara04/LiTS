@@ -18,7 +18,9 @@ LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_)
 
     volume_path = volume_path_;
     segmentation_path = segmentation_path_;
+
     lungs_mask = NULL;
+    body_bounds = NULL;
 
     for(unsigned int i = 0; i < 3; i++)
     {
@@ -40,7 +42,9 @@ LiTS_scan::LiTS_scan(std::string volume_path_)
     volume = VolumeType::New();
 
     volume_path = volume_path_;
+
     lungs_mask = NULL;
+    body_bounds = NULL;
 
     for(unsigned int i = 0; i < 3; i++)
     {
@@ -56,7 +60,11 @@ LiTS_scan::LiTS_scan(std::string volume_path_)
 LiTS_scan::~LiTS_scan()
 {
     if(lungs_mask)
+    {
         delete [] lungs_mask;
+        delete [] body_bounds;
+    }
+
 }
 
 /*
@@ -183,20 +191,36 @@ void LiTS_scan::set_segmentation(SegmentationType::Pointer segment_)
 }
 
 /*
- * get_lungs_mask: returns pointer to lungs_mask
+ * get_lungs_mask: returns pointer to lungs mask
  */
-
 bool * LiTS_scan::get_lungs_mask()
 {
     return lungs_mask;
 }
 
 /*
- * set_lungs_mask: returns pointer to lungs_mask
+ * set_lungs_mask: returns pointer to lungs mask
  */
 void LiTS_scan::set_lungs_mask(bool *lungs_mask_)
 {
        lungs_mask = lungs_mask_;
+}
+
+/*
+ * get_body_bounds: returns pointer to body bounds
+ */
+
+unsigned int * LiTS_scan::get_body_bounds()
+{
+    return body_bounds;
+}
+
+/*
+ * set_body_bounds: returns pointer to body bounds
+ */
+void LiTS_scan::set_body_bounds(unsigned int *body_bounds_)
+{
+       body_bounds = body_bounds_;
 }
 
 /*

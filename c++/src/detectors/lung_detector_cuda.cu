@@ -428,7 +428,7 @@ void extract_lung_candidates(const unsigned int *labeled,
 }
 
 void segment_lungs(const float *volume, const unsigned int *volume_s,
-                   bool *lungs_mask,
+                   bool *lungs_mask, unsigned int *bounds,
                    const unsigned int *subsample_f,
                    const float *lung_assumed_center_n,
                    const unsigned int *body_bounds_th,
@@ -455,7 +455,6 @@ void segment_lungs(const float *volume, const unsigned int *volume_s,
 
     // 2. Detecting body bounds
     //_______________________________________________________________________//
-    unsigned int *bounds = new unsigned int[4 * volume_s[2]];
     unsigned int *bounds_gpu;
 
     cudaMalloc((void **) &bounds_gpu, 4 * volume_s[2] * sizeof(unsigned int));
@@ -502,7 +501,6 @@ void segment_lungs(const float *volume, const unsigned int *volume_s,
         bounds_sub[i] = bounds[i] / subsample_f[i < 2 * volume_s[2]];
 
     remove_outside_body_air(air_mask_sub, s_volume_s, bounds_sub);
-    delete[] bounds;
     delete[] bounds_sub;
 
     //_______________________________________________________________________//
