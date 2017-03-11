@@ -95,13 +95,12 @@ private:
     std::string volume_path;
     std::string segmentation_path;
 
-    VolumeType::Pointer volume = VolumeType::New();
-    SegmentationType::Pointer segmentation = SegmentationType::New();
+    VolumeType::Pointer volume;
+    SegmentationType::Pointer segmentation;
     bool *lungs_mask;
 
-    VolumeReaderType::Pointer volume_reader = VolumeReaderType::New();
-    SegmentationReaderType::Pointer segmentation_reader =
-            SegmentationReaderType::New();
+    VolumeReaderType::Pointer volume_reader;
+    SegmentationReaderType::Pointer segmentation_reader;
 
     int h;
     int w;

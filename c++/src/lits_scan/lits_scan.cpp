@@ -10,6 +10,12 @@
  */
 LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_)
 {
+    volume_reader = VolumeReaderType::New();
+    segmentation_reader = SegmentationReaderType::New();
+
+    volume = VolumeType::New();
+    segmentation = SegmentationType::New();
+
     volume_path = volume_path_;
     segmentation_path = segmentation_path_;
     lungs_mask = NULL;
@@ -30,6 +36,9 @@ LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_)
  */
 LiTS_scan::LiTS_scan(std::string volume_path_)
 {
+    volume_reader = VolumeReaderType::New();
+    volume = VolumeType::New();
+
     volume_path = volume_path_;
     lungs_mask = NULL;
 
@@ -67,7 +76,7 @@ void LiTS_scan::load_volume()
  */
 void LiTS_scan::load_segmentation()
 {
-    if (segmentation_path.size())
+    if (segmentation.IsNotNull())
     {
         segmentation_reader->SetFileName(segmentation_path);
         segmentation_reader->Update();
@@ -102,15 +111,15 @@ void LiTS_scan::load_info()
         axes_orientation[axes_order[i]] = direction_v[i][axes_order[i]];
     }
 
-    h = size_v[axes_order[0]];
-    w = size_v[axes_order[1]];
+    h = size_v[axes_order[1]];
+    w = size_v[axes_order[0]];
     d = size_v[axes_order[2]];
 
-    voxel_h = spacing[axes_order[0]];
-    voxel_w = spacing[axes_order[1]];
+    voxel_h = spacing[axes_order[1]];
+    voxel_w = spacing[axes_order[0]];
     voxel_d = spacing[axes_order[2]];
 
-    if (segmentation_path.size())
+    if (segmentation.IsNotNull())
     {
         SegmentationType::RegionType segment_region = segmentation
                 ->GetLargestPossibleRegion();
