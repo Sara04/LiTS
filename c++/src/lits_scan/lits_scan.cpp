@@ -21,6 +21,7 @@ LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_)
 
     lungs_mask = NULL;
     body_bounds = NULL;
+    liver_bbox = NULL;
 
     for(unsigned int i = 0; i < 3; i++)
     {
@@ -45,6 +46,7 @@ LiTS_scan::LiTS_scan(std::string volume_path_)
 
     lungs_mask = NULL;
     body_bounds = NULL;
+    liver_bbox = NULL;
 
     for(unsigned int i = 0; i < 3; i++)
     {
@@ -63,6 +65,7 @@ LiTS_scan::~LiTS_scan()
     {
         delete [] lungs_mask;
         delete [] body_bounds;
+        delete [] liver_bbox;
     }
 
 }
@@ -221,6 +224,22 @@ unsigned int * LiTS_scan::get_body_bounds()
 void LiTS_scan::set_body_bounds(unsigned int *body_bounds_)
 {
        body_bounds = body_bounds_;
+}
+
+/*
+ * get_liver_bbox: returns pointer to liver bbox
+ */
+unsigned int * LiTS_scan::get_liver_bbox()
+{
+    return liver_bbox;
+}
+
+/*
+ * set_body_bounds: returns pointer to liver bbox
+ */
+void LiTS_scan::set_liver_bbox(unsigned int *liver_bbox_)
+{
+       liver_bbox = liver_bbox_;
 }
 
 /*
