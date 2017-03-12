@@ -335,6 +335,36 @@ void LiTS_db::get_train_paths(const std::string subject_name,
                         + ".nii";
 }
 
+
+
+
+
+
+/*
+ * get_augmentation_paths: creating the volume and segmentation path
+ * for the required subject's name
+ *
+ * Arguments:
+ *      subject_name: string containing name of the training subject
+ *      volume_path: string where the volume path would be stored
+ *      segmentation_path: string where the segmentation path would
+ *          be stored
+ */
+void LiTS_db::get_augmentation_paths(const std::string subject_name,
+                                     std::string &volume_path,
+                                     std::string &segmentation_path)
+{
+    std::string db_batch;
+
+    db_batch = "/Training Cropped";
+
+    volume_path = db_path + db_batch + "/volume-" + subject_name + ".nii";
+
+    segmentation_path = db_path + db_batch + "/segmentation-" + subject_name
+                        + ".nii";
+}
+
+
 /*
  * get_test_path: creating the volume path for the required subject's name
  *

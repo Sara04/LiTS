@@ -117,6 +117,10 @@ public:
                          std::string &volume_path,
                          std::string &segmentation_path);
 
+    void get_augmentation_paths(const std::string subject_name,
+                                std::string &volume_path,
+                                std::string &segmentation_path);
+
     void get_test_path(const std::string subject_name,
                        std::string &volume_path);
 };
