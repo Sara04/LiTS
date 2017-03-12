@@ -1,9 +1,6 @@
 
 #include "liver_detector.h"
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
 LiTS_liver_detector::LiTS_liver_detector()
 {
 }
