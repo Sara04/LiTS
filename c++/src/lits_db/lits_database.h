@@ -113,13 +113,18 @@ public:
     std::string get_eval_subject_name(int position);
     std::string get_test_subject_name(int position);
 
+    void get_train_volume_path(const std::string subject_name,
+                               std::string &volume_path);
+
     void get_train_paths(const std::string subject_name,
                          std::string &volume_path,
                          std::string &segmentation_path);
 
-    void get_augmentation_paths(const std::string subject_name,
-                                std::string &volume_path,
-                                std::string &segmentation_path);
+    void get_train_segmentation_path(const std::string subject_name,
+                                     std::string &segmentation_path);
+
+    void get_test_segment_path(const std::string subject_name,
+                               std::string &segmentation_path);
 
     void get_test_path(const std::string subject_name,
                        std::string &volume_path);

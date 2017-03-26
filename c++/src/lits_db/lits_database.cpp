@@ -309,6 +309,26 @@ std::string LiTS_db::get_test_subject_name(int position)
 }
 
 /*
+ * get_train_volume_path: creating the volume and segmentation path for the
+ * required subject's name
+ *
+ * Arguments:
+ *      subject_name: string containing name of the training subject
+ *      volume_path: string where the volume path would be stored
+ */
+void LiTS_db::get_train_volume_path(const std::string subject_name,
+                           std::string &volume_path)
+{
+    std::string db_batch;
+
+    if (atoi(subject_name.c_str()) < 28)
+        db_batch = "/Training Batch 1";
+    else
+        db_batch = "/Training Batch 2";
+
+    volume_path = db_path + db_batch + "/volume-" + subject_name + ".nii";
+}
+/*
  * get_train_paths: creating the volume and segmentation path for the
  * required subject's name
  *
@@ -335,35 +355,36 @@ void LiTS_db::get_train_paths(const std::string subject_name,
                         + ".nii";
 }
 
-
-
-
-
-
 /*
- * get_augmentation_paths: creating the volume and segmentation path
- * for the required subject's name
+ * get_train_segmentation_path: creating path to the file where is/will be
+ * masks of lungs, liver, tumor
  *
  * Arguments:
  *      subject_name: string containing name of the training subject
- *      volume_path: string where the volume path would be stored
- *      segmentation_path: string where the segmentation path would
+ *      lung_segmentation_path: string where the segmentation path would
  *          be stored
  */
-void LiTS_db::get_augmentation_paths(const std::string subject_name,
-                                     std::string &volume_path,
-                                     std::string &segmentation_path)
+void LiTS_db::get_train_segmentation_path(const std::string subject_name,
+                                          std::string &lung_segmentation_path)
 {
     std::string db_batch;
 
-    db_batch = "/Training Cropped";
+    db_batch = "/Training Segmentations";
 
-    volume_path = db_path + db_batch + "/volume-" + subject_name + ".nii";
-
-    segmentation_path = db_path + db_batch + "/segmentation-" + subject_name
-                        + ".nii";
+    lung_segmentation_path =
+            db_path + db_batch + "/segmentation-" + subject_name + ".nii";
 }
 
+
+void LiTS_db::get_test_segment_path(const std::string subject_name,
+                                    std::string &segmentation_path)
+{
+    std::string db_batch;
+
+    db_batch = "/Testing Results";
+    segmentation_path =
+            db_path + db_batch + "/test-segmentation-" + subject_name + ".nii";
+}
 
 /*
  * get_test_path: creating the volume path for the required subject's name
