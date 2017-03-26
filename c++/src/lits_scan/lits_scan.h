@@ -12,11 +12,16 @@
 #include <string>
 #include <itkImage.h>
 #include <itkImageFileReader.h>
+#include <itkImageFileWriter.h>
+#include <boost/filesystem.hpp>
+
+namespace fs = boost::filesystem;
 
 typedef itk::Image<float, 3> VolumeType;
 typedef itk::ImageFileReader<VolumeType> VolumeReaderType;
 typedef itk::Image<unsigned char, 3> SegmentationType;
 typedef itk::ImageFileReader<SegmentationType> SegmentationReaderType;
+typedef itk::ImageFileWriter<SegmentationType> SegmentationWriterType;
 
 /* LiTS_scan class for volume and segmentation file management.
  * It has means of volume and segmentation nii file reading,
@@ -97,9 +102,9 @@ private:
 
     VolumeType::Pointer volume;
     SegmentationType::Pointer segmentation;
-    bool *lungs_mask;
-    unsigned int *body_bounds;
-    unsigned int *liver_bbox;
+    SegmentationType::Pointer lungs_segmentation;
+    SegmentationType::Pointer liver_segmentation;
+    SegmentationType::Pointer liver_tumor_segmentation;
 
     VolumeReaderType::Pointer volume_reader;
     SegmentationReaderType::Pointer segmentation_reader;
@@ -119,22 +124,30 @@ public:
 
     LiTS_scan(std::string volume_path_, std::string segmentation_path_);
     LiTS_scan(std::string volume_path_);
-    ~LiTS_scan();
 
     void load_volume();
     void load_segmentation();
     void load_info();
+    void load_lungs_segmentation(std::string lungs_segmentation_path);
+    void load_liver_segmentation(std::string liver_segmentation_path);
+    void load_liver_tumor_segmentation(std::string
+                                       liver_tumor_segmentation_path);
+
+    void set_volume(VolumeType::Pointer volume_);
+    void set_segmentation(SegmentationType::Pointer segment_);
+    void set_lungs_segmentation(SegmentationType::Pointer lungs_segment_);
+    void set_lungs_segmentation(unsigned char *lungs_segment_);
+    void set_liver_segmentation(SegmentationType::Pointer liver_segment_);
+    void set_liver_segmentation(unsigned char *liver_segment_);
+    void set_liver_tumor_segmentation(SegmentationType::Pointer
+                                      liver_tumor_segment_);
+    void set_liver_tumor_segmentation(unsigned char *liver_tumor_segment_);
 
     VolumeType::Pointer get_volume();
-    void set_volume(VolumeType::Pointer volume_);
     SegmentationType::Pointer get_segmentation();
-    void set_segmentation(SegmentationType::Pointer segment_);
-    bool * get_lungs_mask();
-    void set_lungs_mask(bool *lungs_mask_);
-    unsigned int * get_body_bounds();
-    void set_body_bounds(unsigned int *body_bounds_);
-    unsigned int * get_liver_bbox();
-    void set_liver_bbox(unsigned int *liver_bbox_);
+    SegmentationType::Pointer get_lungs_segmentation();
+    SegmentationType::Pointer get_liver_segmentation();
+    SegmentationType::Pointer get_liver_tumor_segmentation();
 
     int get_height();
     int get_width();
@@ -147,12 +160,10 @@ public:
     unsigned int * get_axes_order();
     short int * get_axes_orientation();
 
-    void set_height(int h_);
-    void set_width(int w_);
-    void set_depth(int d_);
-
-    void set_axes_order(unsigned int *order);
-    void set_axes_orientation(short *orientation);
+    void save_lungs_segmentation(std::string lungs_segmentation_path);
+    void save_liver_segmentation(std::string liver_segmentation_path);
+    void save_liver_tumor_segmentation(std::string
+                                       liver_tumor_segmentation_path);
 
 };
 
