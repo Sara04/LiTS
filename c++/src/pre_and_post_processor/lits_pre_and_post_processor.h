@@ -5,8 +5,8 @@
  *      Author: sara
  */
 
-#ifndef LITS_PREPROCESSOR_H_
-#define LITS_PREPROCESSOR_H_
+#ifndef LITS_PRE_AND_POST_PROCESSOR_H_
+#define LITS_PRE_AND_POST_PROCESSOR_H_
 
 #include "../lits_scan/lits_scan.h"
 #include <string>
@@ -39,7 +39,7 @@ typedef itk::OrientImageFilter<SegmentationType, SegmentationType>
  * 		preprocess: normalize voxel intensities and flip volume and
  * 			segmentation if necessary
  */
-class LiTS_preprocessor
+class LiTS_pre_and_post_processor
 {
 
 private:
@@ -48,11 +48,34 @@ private:
     float minimum_value;
     float maximum_value;
     std::string approach;
+    short orient[3];
+    unsigned ord[3];
 
 public:
-    LiTS_preprocessor(float lt = -300, float ut = 700.0, float min = -0.5,
-                      float max = 0.5, std::string approach = "cuda");
-    void preprocess(LiTS_scan *scan);
+
+    LiTS_pre_and_post_processor(float lt = -300, float ut = 700.0, float min = -0.5,
+                                float max = 0.5, std::string approach = "cuda");
+
+    void preprocess_volume(LiTS_scan *scan);
+
+    void normalize_volume(LiTS_scan *scan);
+
+    void reorient_volume(LiTS_scan *scan,
+                         unsigned *cord, short *corient,
+                         unsigned *dord, short *dorient);
+
+    void reorient_segmentation(LiTS_scan *scan,
+                               unsigned *cord, short *corient,
+                               unsigned *dord, short *dorient);
+
+    void reorient_segmentation(unsigned char *segmentation,
+                               unsigned w, unsigned h, unsigned d,
+                               unsigned *cord, short *corient,
+                               unsigned *dord, short *dorient);
+
+    short * get_axes_orientation();
+    unsigned *get_axes_order();
+
 };
 
-#endif /* LITS_PREPROCESSOR_H_ */
+#endif /* LITS_PRE_AND_POST_PROCESSOR_H_ */
