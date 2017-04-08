@@ -1,16 +1,18 @@
 #include "lits_database.h"
 
 // Training batches of the database
-// First contains 28 subjects and second 103
+// The first contains 28 subjects and the second 103
 std::string train_db_batches[2] = {"Training Batch 1", "Training Batch 2"};
 
 // Testing batch of the database
+// It contains 70 subjects
 std::string test_batch = "Testing Batch";
 
-// Possible database split ratios into development
+// Possible database split ratios (%) into development
 // validation and evaluation subsets in percents
 unsigned short split_ratios[3][3] = {{60, 20, 20}, {50, 25, 25}, {80, 10, 10}};
 
+// Cross validation parameter
 // Number of necessary database splits in order to
 // evaluate algorithm on all data in such a way that
 // there is no overlap between development, validation
@@ -22,14 +24,14 @@ unsigned short split_ratios[3][3] = {{60, 20, 20}, {50, 25, 25}, {80, 10, 10}};
 // the same until the algorithm is evaluated on all data)
 unsigned short n_develop_valid_eval[3] = {5, 4, 10};
 
-/*
+/******************************************************************************
  * LiTS_db constructor: assigning database path
  *
  * Arguments:
  * 		db_path_: path to the directory containing folders
  * 		"Training Batch 1" and "Training Batch 2"
  *
- */
+ ******************************************************************************/
 LiTS_db::LiTS_db(std::string db_path_)
 {
     db_path = db_path_;
@@ -40,13 +42,13 @@ LiTS_db::LiTS_db(std::string db_path_)
     n_test = 0;
 }
 
-/*
- * load_train_subject_names - loading all training subject names into
+/******************************************************************************
+ * load_train_subjects_names - loading all training subjects' names into
  * the private member training_names (vector of strings) and shuffling
- * their order in order to avoid having data ordering by the institutions
+ * their order in order to avoid having the data ordering by the institutions
  * they were acquired in
- */
-void LiTS_db::load_train_subject_names()
+ ******************************************************************************/
+void LiTS_db::load_train_subjects_names()
 {
     fs::directory_iterator end_iter;
     std::string subject_name;
@@ -86,11 +88,11 @@ void LiTS_db::load_train_subject_names()
     n_train = training_subjects.size();
 }
 
-/*
- * load_test_subject_names - loading all testing subject names into
+/******************************************************************************
+ * load_test_subjects_names - loading all testing subjects' names into
  * the private member testing_names (vector of strings)
- */
-void LiTS_db::load_test_subject_names()
+ ******************************************************************************/
+void LiTS_db::load_test_subjects_names()
 {
 
     fs::directory_iterator end_iter;
@@ -120,15 +122,16 @@ void LiTS_db::load_test_subject_names()
     }
     n_test = testing_subjects.size();
 }
-/*
+
+/******************************************************************************
  * train_data_split: splitting data into development, validation and
  * evaluation parts
  *
  * Arguments:
- * 		split_ratio: selection of one of the the three offered split ratios
- * 		selection: selection of the training split ordinal number for the
- * 		given split ratio
- */
+ * 		split_ratio: selection of one out of three offered split ratios
+ * 		selection: selection of the ordinal number of the data split
+ * 		    for the selected split ratio
+ ******************************************************************************/
 void LiTS_db::train_data_split(int split_ratio, int selection)
 {
     empty_split();
@@ -154,10 +157,10 @@ void LiTS_db::train_data_split(int split_ratio, int selection)
                          n_train));
 }
 
-/*
+/******************************************************************************
  * empty_split: reseting the number and emptying lists of
  * development, validation and evaluation subjects
- */
+ ******************************************************************************/
 void LiTS_db::empty_split()
 {
     n_develop = 0;
@@ -168,58 +171,58 @@ void LiTS_db::empty_split()
     evaluation_subjects.clear();
 }
 
-/*
+/******************************************************************************
  * get_number_of_training: returning the total number of subjects in
- * the training database
- */
+ * the training subset
+ ******************************************************************************/
 int LiTS_db::get_number_of_training()
 {
     return n_train;
 }
 
-/*
+/******************************************************************************
  * get_number_of_development: returning the total number of subjects in
  * the development subset
- */
+ ******************************************************************************/
 int LiTS_db::get_number_of_development()
 {
     return n_develop;
 }
 
-/*
+/******************************************************************************
  * get_number_of_validation: returning the total number of subjects in
  * the validation subset
- */
+ ******************************************************************************/
 int LiTS_db::get_number_of_validation()
 {
     return n_valid;
 }
 
-/*
+/******************************************************************************
  * get_number_of_evaluation: returning the total number of subjects in
  * the evaluation subset
- */
+ ******************************************************************************/
 int LiTS_db::get_number_of_evaluation()
 {
     return n_eval;
 }
 
-/*
+/******************************************************************************
  * get_number_of_testing: returning the total number of subjects in
- * the testing database
- */
+ * the testing subset
+ ******************************************************************************/
 int LiTS_db::get_number_of_testing()
 {
     return n_test;
 }
 
-/*
+/******************************************************************************
  * get_train_subject_name: returning the subject's name at the required
- * position in the training database
+ * position in the training subset
  *
  * Arguments:
  * 		position: required subject's position in the training database
- */
+ ******************************************************************************/
 std::string LiTS_db::get_train_subject_name(int position)
 {
     if (position < n_train and position >= 0)
@@ -232,13 +235,13 @@ std::string LiTS_db::get_train_subject_name(int position)
     }
 }
 
-/*
+/******************************************************************************
  * get_develop_subject_name: returning the subject's name at the required
  * position in the development subset
  *
  * Arguments:
  * 		position: required subject's position in the development subset
- */
+ ******************************************************************************/
 std::string LiTS_db::get_develop_subject_name(int position)
 {
     if (position < n_develop and position >= 0)
@@ -251,13 +254,13 @@ std::string LiTS_db::get_develop_subject_name(int position)
     }
 }
 
-/*
+/******************************************************************************
  * get_valid_subject_name: returning the subject's name at the required
  * position in the validation subset
  *
  * Arguments:
  * 		position: required subject's position in the validation subset
- */
+ ******************************************************************************/
 std::string LiTS_db::get_valid_subject_name(int position)
 {
     if (position < n_valid and position >= 0)
@@ -270,13 +273,13 @@ std::string LiTS_db::get_valid_subject_name(int position)
     }
 }
 
-/*
+/******************************************************************************
  * get_eval_subject_name: returning the subject's name at the required
  * position in the evaluation subset
  *
  * Arguments:
  * 		position: required subject's position in the evaluation subset
- */
+ ******************************************************************************/
 std::string LiTS_db::get_eval_subject_name(int position)
 {
     if (position < n_eval and position >= 0)
@@ -289,13 +292,13 @@ std::string LiTS_db::get_eval_subject_name(int position)
     }
 }
 
-/*
+/******************************************************************************
  * get_test_subject_name: returning the subject's name at the required
  * position in the testing database
  *
  * Arguments:
  * 		position: required subject's position in the testing database
- */
+ ******************************************************************************/
 std::string LiTS_db::get_test_subject_name(int position)
 {
     if (position < n_test and position >= 0)
@@ -308,27 +311,7 @@ std::string LiTS_db::get_test_subject_name(int position)
     }
 }
 
-/*
- * get_train_volume_path: creating the volume and segmentation path for the
- * required subject's name
- *
- * Arguments:
- *      subject_name: string containing name of the training subject
- *      volume_path: string where the volume path would be stored
- */
-void LiTS_db::get_train_volume_path(const std::string subject_name,
-                           std::string &volume_path)
-{
-    std::string db_batch;
-
-    if (atoi(subject_name.c_str()) < 28)
-        db_batch = "/Training Batch 1";
-    else
-        db_batch = "/Training Batch 2";
-
-    volume_path = db_path + db_batch + "/volume-" + subject_name + ".nii";
-}
-/*
+/******************************************************************************
  * get_train_paths: creating the volume and segmentation path for the
  * required subject's name
  *
@@ -337,7 +320,7 @@ void LiTS_db::get_train_volume_path(const std::string subject_name,
  * 		volume_path: string where the volume path would be stored
  * 		segmentation_path: string where the segmentation path would
  * 			be stored
- */
+ ******************************************************************************/
 void LiTS_db::get_train_paths(const std::string subject_name,
                               std::string &volume_path,
                               std::string &segmentation_path)
@@ -355,29 +338,90 @@ void LiTS_db::get_train_paths(const std::string subject_name,
                         + ".nii";
 }
 
-/*
- * get_train_segmentation_path: creating path to the file where is/will be
- * masks of lungs, liver, tumor
+/******************************************************************************
+ * get_train_volume_path: creating the volume path for the
+ * required subject's name
  *
  * Arguments:
- *      subject_name: string containing name of the training subject
- *      lung_segmentation_path: string where the segmentation path would
- *          be stored
- */
-void LiTS_db::get_train_segmentation_path(const std::string subject_name,
-                                          std::string &lung_segmentation_path)
+ *      subject_name: string containing training subject's name
+ *      volume_path: string where the volume path would be stored
+ ******************************************************************************/
+void LiTS_db::get_train_volume_path(const std::string subject_name,
+                           std::string &volume_path)
 {
     std::string db_batch;
 
-    db_batch = "/Training Segmentations";
+    if (atoi(subject_name.c_str()) < 28)
+        db_batch = "/Training Batch 1";
+    else
+        db_batch = "/Training Batch 2";
 
-    lung_segmentation_path =
-            db_path + db_batch + "/segmentation-" + subject_name + ".nii";
+    volume_path = db_path + db_batch + "/volume-" + subject_name + ".nii";
 }
 
+/******************************************************************************
+ * get_train_segmentation_path: creating the segmentation path for the
+ * required subject's name
+ *
+ * Arguments:
+ *      subject_name: string containing training subject's name
+ *      segmentation_path: string where the segmentation path would be stored
+ ******************************************************************************/
+void LiTS_db::get_train_segmentation_path(const std::string subject_name,
+                                          std::string &segmentation_path)
+{
+    std::string db_batch;
 
-void LiTS_db::get_test_segment_path(const std::string subject_name,
-                                    std::string &segmentation_path)
+    if (atoi(subject_name.c_str()) < 28)
+        db_batch = "/Training Batch 1";
+    else
+        db_batch = "/Training Batch 2";
+
+    segmentation_path = db_path + db_batch +
+                        "/segmentation-" + subject_name + ".nii";
+}
+
+/******************************************************************************
+ * get_train_meta_segmentation_path: creating the segmentation path for
+ * the meta segmentation for the required subject's name
+ *
+ * Arguments:
+ *      subject_name: string containing training subject's name
+ *      meta_segment_path: string where the meta segmentation path would
+ *      be stored
+ ******************************************************************************/
+void LiTS_db::get_train_meta_segmentation_path(const std::string subject_name,
+                                               std::string &meta_segment_path)
+{
+    meta_segment_path = db_path + "/Training Meta Segmentations" +
+                        "/segmentation-" + subject_name + ".nii";
+}
+
+/******************************************************************************
+ * get_test_volume_path: creating the volume path for the
+ * required subject's name
+ *
+ * Arguments:
+ *      subject_name: string containing testing subject's name
+ *      volume_path: string where the volume path would be stored
+ ******************************************************************************/
+void LiTS_db::get_test_volume_path(const std::string subject_name,
+                                   std::string &volume_path)
+{
+    volume_path = db_path + "/Testing Batch" + "/test-volume-" + subject_name
+                  + ".nii";
+}
+
+/******************************************************************************
+ * get_test_segmentation_path: creating the segmentation path for the
+ * required subject's name
+ *
+ * Arguments:
+ *      subject_name: string containing testing subject's name
+ *      segmentation_path: string where the segmentation path would be stored
+ ******************************************************************************/
+void LiTS_db::get_test_segmentation_path(const std::string subject_name,
+                                         std::string &segmentation_path)
 {
     std::string db_batch;
 
@@ -386,16 +430,3 @@ void LiTS_db::get_test_segment_path(const std::string subject_name,
             db_path + db_batch + "/test-segmentation-" + subject_name + ".nii";
 }
 
-/*
- * get_test_path: creating the volume path for the required subject's name
- *
- * Arguments:
- * 		subject_name: string containing name of the testing subject
- * 		volume_path: string where the volume path would be stored
- */
-void LiTS_db::get_test_path(const std::string subject_name,
-                            std::string &volume_path)
-{
-    volume_path = db_path + "/Testing Batch" + "/test-volume-" + subject_name
-                  + ".nii";
-}
