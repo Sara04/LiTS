@@ -1,7 +1,9 @@
 #include "lits_scan.h"
 
 /******************************************************************************
- * LiTS_scan constructor: assigning volume and segmentation file paths
+ * LiTS_scan constructor: assigning volume and segmentation file paths,
+ *  volume and segmentation member dynamic construction,
+ *  initializing axes_order and axes_orientation members
  *
  * Arguments:
  * 		volume_path_: path to the volume file
@@ -23,7 +25,8 @@ LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_)
 }
 
 /******************************************************************************
- * LiTS_scan constructor: assigning volume file path
+ * LiTS_scan constructor: assigning volume file path, volume member dynamic
+ * construction, initializing axes_order and axes_orientation members
  *
  * Arguments:
  * 		volume_path_: path to the volume file
@@ -129,79 +132,24 @@ void LiTS_scan::load_info()
 }
 
 /******************************************************************************
- * load_lungs_segmentation: loading lungs segmentation from the
- * lungs_segmentation_path using segmentation_reader
- * Arguments:
- *      lungs_segmentation_path: path to the lungs segmentation file
+ * load_meta_segmentation: loading meta segmentation from the
+ * meta_segmentation_path using segmentation_reader
  *****************************************************************************/
-void LiTS_scan::load_lungs_segmentation(std::string lungs_segmentation_path)
+void LiTS_scan::load_meta_segmentation()
 {
 
-
-    if (fs::exists(lungs_segmentation_path))
+    if (fs::exists(meta_segmentation_path))
     {
         SegmentationReaderType::Pointer segmentation_reader =
                 SegmentationReaderType::New();
-        lungs_segmentation = SegmentationType::New();
-        segmentation_reader->SetFileName(lungs_segmentation_path);
+        meta_segmentation = SegmentationType::New();
+        segmentation_reader->SetFileName(meta_segmentation_path);
         segmentation_reader->Update();
-        lungs_segmentation = segmentation_reader->GetOutput();
+        meta_segmentation = segmentation_reader->GetOutput();
     }
     else
     {
-        std::cout<<"Lungs segmentation path does not exist!"<<std::endl;
-        exit (EXIT_FAILURE);
-    }
-}
-
-/******************************************************************************
- * load_liver_segmentation: loading liver segmentation from the
- * liver_segmentation_path using segmentation_reader
- * Arguments:
- *      liver_segmentation_path: path to the liver segmentation file
- *****************************************************************************/
-void LiTS_scan::load_liver_segmentation(std::string liver_segmentation_path)
-{
-
-    if (fs::exists(liver_segmentation_path))
-    {
-        SegmentationReaderType::Pointer segmentation_reader =
-                SegmentationReaderType::New();
-        liver_segmentation = SegmentationType::New();
-        segmentation_reader->SetFileName(liver_segmentation_path);
-        segmentation_reader->Update();
-        liver_segmentation = segmentation_reader->GetOutput();
-    }
-    else
-    {
-        std::cout<<"Liver segmentation path does not exist!"<<std::endl;
-        exit (EXIT_FAILURE);
-    }
-}
-
-/******************************************************************************
- * load_liver_tumor_segmentation: loading liver tumor segmentation from the
- * liver_tumor_segmentation_path using segmentation_reader
- * Arguments:
- *      liver_tumor_segmentation_path: path to the liver tumor segmentation
- *      file
- *****************************************************************************/
-void LiTS_scan::load_liver_tumor_segmentation(std::string
-                                              liver_tumor_segmentation_path)
-{
-
-    if (fs::exists(liver_tumor_segmentation_path))
-    {
-        SegmentationReaderType::Pointer segmentation_reader =
-                SegmentationReaderType::New();
-        liver_tumor_segmentation = SegmentationType::New();
-        segmentation_reader->SetFileName(liver_tumor_segmentation_path);
-        segmentation_reader->Update();
-        liver_tumor_segmentation = segmentation_reader->GetOutput();
-    }
-    else
-    {
-        std::cout<<"Liver tumor segmentation path does not exist!"<<std::endl;
+        std::cout<<"Meta segmentation path does not exist!"<<std::endl;
         exit (EXIT_FAILURE);
     }
 }
@@ -227,24 +175,24 @@ void LiTS_scan::set_segmentation(SegmentationType::Pointer segment_)
 }
 
 /******************************************************************************
- * set_lungs_segmentation: sets lungs_segmentation member
+ * set_meta_segmentation: sets meta_segmentation member
  * Arguments:
- *      lungs_segment_: pointer to the lungs segmentation data
+ *      meta_segment_: pointer to the meta segmentation data
  *****************************************************************************/
-void LiTS_scan::set_lungs_segmentation(SegmentationType::Pointer
-                                       lungs_segment_)
+void LiTS_scan::set_meta_segmentation(SegmentationType::Pointer
+                                       meta_segment_)
 {
-    lungs_segmentation = lungs_segment_;
+    meta_segmentation = meta_segment_;
 }
 
 /******************************************************************************
- * set_lungs_segmentation: creates and sets lungs_segmentation member
+ * set_meta_segmentation: constructs and sets meta_segmentation member
  * Arguments:
- *      lungs_segment_: buffer containing lungs segmentation
+ *      meta_segment_: buffer containing lungs segmentation
  *****************************************************************************/
-void LiTS_scan::set_lungs_segmentation(unsigned char *lungs_segment)
+void LiTS_scan::set_meta_segmentation(unsigned char *meta_segment_)
 {
-    lungs_segmentation = SegmentationType::New();
+    meta_segmentation = SegmentationType::New();
 
     SegmentationType::IndexType desired_start;
     SegmentationType::SizeType desired_size;
@@ -260,114 +208,20 @@ void LiTS_scan::set_lungs_segmentation(unsigned char *lungs_segment)
 
     SegmentationType::RegionType desiredRegion(desired_start, desired_size);
 
-    lungs_segmentation->SetRegions(desiredRegion);
-    lungs_segmentation->Allocate();
+    meta_segmentation->SetRegions(desiredRegion);
+    meta_segmentation->Allocate();
 
     spacing[axes_order[0]] = voxel_w;
     spacing[axes_order[1]] = voxel_h;
     spacing[axes_order[2]] = voxel_d;
-    lungs_segmentation->SetSpacing(spacing);
+    meta_segmentation->SetSpacing(spacing);
 
     unsigned int segment_size = w * h * d;
-    memcpy(lungs_segmentation->GetBufferPointer(), lungs_segment, segment_size);
+    memcpy(meta_segmentation->GetBufferPointer(), meta_segment_, segment_size);
 }
 
 /******************************************************************************
- * set_liver_segmentation: sets liver_segmentation member
- * Arguments:
- *      liver_segment_: pointer to the segmentation data
- *****************************************************************************/
-void LiTS_scan::set_liver_segmentation(SegmentationType::Pointer
-                                       liver_segment_)
-{
-    liver_segmentation = liver_segment_;
-}
-
-/******************************************************************************
- * set_liver_segmentation: creates and sets liver_segmentation member
- * Arguments:
- *      liver_segment_: buffer containing liver segmentation
- *****************************************************************************/
-void LiTS_scan::set_liver_segmentation(unsigned char *liver_segment)
-{
-    liver_segmentation = SegmentationType::New();
-
-    SegmentationType::IndexType desired_start;
-    SegmentationType::SizeType desired_size;
-    SegmentationType::SpacingType spacing;
-
-    desired_start[0] = 0;
-    desired_start[0] = 0;
-    desired_start[0] = 0;
-
-    desired_size[axes_order[0]] = w;
-    desired_size[axes_order[1]] = h;
-    desired_size[axes_order[2]] = d;
-
-    SegmentationType::RegionType desiredRegion(desired_start, desired_size);
-
-    liver_segmentation->SetRegions(desiredRegion);
-    liver_segmentation->Allocate();
-
-    spacing[axes_order[0]] = voxel_w;
-    spacing[axes_order[1]] = voxel_h;
-    spacing[axes_order[2]] = voxel_d;
-    liver_segmentation->SetSpacing(spacing);
-
-    unsigned int segment_size = w * h * d;
-    memcpy(liver_segmentation->GetBufferPointer(), liver_segment, segment_size);
-}
-
-/******************************************************************************
- * set_liver_tumor_segmentation: sets liver_tumor_segmentation member
- * Arguments:
- *      liver_tumor_segment_: pointer to the liver tumor segmentation data
- *****************************************************************************/
-void LiTS_scan::set_liver_tumor_segmentation(SegmentationType::Pointer
-                                             liver_tumor_segment_)
-{
-    liver_tumor_segmentation = liver_tumor_segment_;
-}
-
-/******************************************************************************
- * set_liver_segmentation: creates and sets liver_tumor_segmentation member
- * Arguments:
- *      liver_tumor_segment_: buffer containing liver tumor segmentation
- *****************************************************************************/
-void LiTS_scan::set_liver_tumor_segmentation(unsigned char *
-                                             liver_tumor_segment)
-{
-    liver_tumor_segmentation = SegmentationType::New();
-
-    SegmentationType::IndexType desired_start;
-    SegmentationType::SizeType desired_size;
-    SegmentationType::SpacingType spacing;
-
-    desired_start[0] = 0;
-    desired_start[0] = 0;
-    desired_start[0] = 0;
-
-    desired_size[axes_order[0]] = w;
-    desired_size[axes_order[1]] = h;
-    desired_size[axes_order[2]] = d;
-
-    SegmentationType::RegionType desiredRegion(desired_start, desired_size);
-
-    liver_tumor_segmentation->SetRegions(desiredRegion);
-    liver_tumor_segmentation->Allocate();
-
-    spacing[axes_order[0]] = voxel_w;
-    spacing[axes_order[1]] = voxel_h;
-    spacing[axes_order[2]] = voxel_d;
-    liver_tumor_segmentation->SetSpacing(spacing);
-
-    unsigned int segment_size = w * h * d;
-    memcpy(liver_tumor_segmentation->GetBufferPointer(),
-           liver_tumor_segment, segment_size);
-}
-
-/******************************************************************************
- * get_volume: returns volume member
+ * get_volume: returns volume pointer
  *****************************************************************************/
 VolumeType::Pointer LiTS_scan::get_volume()
 {
@@ -375,7 +229,7 @@ VolumeType::Pointer LiTS_scan::get_volume()
 }
 
 /******************************************************************************
- * get_segmentation: returns segmentation member
+ * get_segmentation: returns segmentation pointer
  *****************************************************************************/
 SegmentationType::Pointer LiTS_scan::get_segmentation()
 {
@@ -383,27 +237,11 @@ SegmentationType::Pointer LiTS_scan::get_segmentation()
 }
 
 /******************************************************************************
- * get_lungs_mask: returns pointer to lungs mask
+ * get_meta_segmentation: returns meta segmentation pointer
  *****************************************************************************/
-SegmentationType::Pointer LiTS_scan::get_lungs_segmentation()
+SegmentationType::Pointer LiTS_scan::get_meta_segmentation()
 {
-    return lungs_segmentation;
-}
-
-/******************************************************************************
- * get_liver_mask: returns pointer to liver mask
- *****************************************************************************/
-SegmentationType::Pointer LiTS_scan::get_liver_segmentation()
-{
-    return liver_segmentation;
-}
-
-/******************************************************************************
- * get_liver_tumor_mask: returns pointer to liver tumor mask
- *****************************************************************************/
-SegmentationType::Pointer LiTS_scan::get_liver_tumor_segmentation()
-{
-    return liver_tumor_segmentation;
+    return meta_segmentation;
 }
 
 /******************************************************************************
@@ -471,20 +309,16 @@ float LiTS_scan::get_voxel_depth()
 }
 
 /******************************************************************************
- * save_lungs_segmentation: save lungs_segmentation at input path
+ * save_meta_segmentation: save meta_segmentation at the input path
  * Arguments:
- *      lungs_segmentation_path:
+ *      meta_segmentation_path_: path where to save meta segmentation
  *****************************************************************************/
-void LiTS_scan::save_lungs_segmentation(std::string lungs_segmentation_path)
+void LiTS_scan::save_meta_segmentation(std::string meta_segmentation_path_)
 {
     SegmentationWriterType::Pointer segmentation_writer =
             SegmentationWriterType::New();
 
-    segmentation_writer->SetFileName(lungs_segmentation_path);
-    segmentation_writer->SetInput(lungs_segmentation);
+    segmentation_writer->SetFileName(meta_segmentation_path_);
+    segmentation_writer->SetInput(meta_segmentation);
     segmentation_writer->Update();
-
 }
-void save_liver_segmentation(std::string liver_segmentation_path);
-void save_liver_tumor_segmentation(std::string
-                                   liver_tumor_segmentation_path);
