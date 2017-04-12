@@ -1,8 +1,5 @@
 #include "lung_segmentator.h"
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-
 /******************************************************************************
  * LiTS_lung_detector constructor: initialization of
  * 		attributes
