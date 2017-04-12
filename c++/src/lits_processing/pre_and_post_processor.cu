@@ -1,4 +1,4 @@
-#include "pre_and_post_processor_cuda.cuh"
+#include "pre_and_post_processor.cuh"
 #define MAX_THREADS 1024
 
 #include <iostream>
