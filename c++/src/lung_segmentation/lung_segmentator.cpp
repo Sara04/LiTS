@@ -1,6 +1,9 @@
 #include "lung_segmentator.h"
 
-/*
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
+/******************************************************************************
  * LiTS_lung_detector constructor: initialization of
  * 		attributes
  *
@@ -9,7 +12,7 @@
  * 		air_threshold: threshold below which voxel intensities
  * 			are considered to belong to the air
  *
- */
+ *****************************************************************************/
 LiTS_lung_segmentator::LiTS_lung_segmentator(float lung_volume_threshold_,
                                              float air_threshold_)
 {
@@ -17,7 +20,7 @@ LiTS_lung_segmentator::LiTS_lung_segmentator(float lung_volume_threshold_,
     air_threshold = air_threshold_;
 }
 
-/*
+/******************************************************************************
  * LiTS_lung_detector constructor: initialization of
  * 		attributes
  *
@@ -34,7 +37,7 @@ LiTS_lung_segmentator::LiTS_lung_segmentator(float lung_volume_threshold_,
  * 		body_bounds_th_: thresholds used for side, front and back
  * 			body bounds detection
  *
- */
+ *****************************************************************************/
 LiTS_lung_segmentator::LiTS_lung_segmentator(unsigned int *subsample_factor_,
                                        float lung_volume_threshold_,
                                        float air_threshold_,
@@ -45,13 +48,70 @@ LiTS_lung_segmentator::LiTS_lung_segmentator(unsigned int *subsample_factor_,
     air_threshold = air_threshold_;
     for (unsigned int i = 0; i < 3; i++)
     {
-        subsample_factor[i] = subsample_factor_[i];
+        ds_factor[i] = subsample_factor_[i];
         lung_assumed_center_n[i] = lung_assumed_center_n_[i];
         body_bounds_th[i] = body_bounds_th_[i];
     }
 }
 
-/*
+/******************************************************************************
+ * adjust_segmentation_parameters: method for segmentation parameter adjusting
+ *  with respect to the input volume size
+ *
+ * Arguments:
+ *      scan: pointer to the LiTS_scan object that contains
+ *          pointer to the pre-processed volume array and
+ *          extracted info about voxel and volume size
+ *
+ *****************************************************************************/
+void LiTS_lung_segmentator::
+    adjust_segmentation_parameters(LiTS_scan *scan, unsigned int *ds_factor_a,
+                                   float &lung_V_th_vox, unsigned int *bbounds)
+{
+
+    lung_V_th_vox = lung_volume_threshold /
+                    (scan->get_voxel_height() *
+                     scan->get_voxel_width() *
+                     scan->get_voxel_depth());
+    unsigned int hw;
+    for(unsigned int i = 0; i < 3; i++)
+        ds_factor_a[i] = ds_factor[i];
+
+    if(scan->get_width() > scan->get_height())
+    {
+        hw = scan->get_width();
+        ds_factor_a[1] = int(float(ds_factor[1] * scan->get_height()) / hw);
+    }
+    else
+    {
+        hw = scan->get_height();
+        ds_factor_a[0] = int(float(ds_factor[0] * scan->get_width()) / hw);
+    }
+
+    if(!ds_factor_a[1])
+        ds_factor_a[1] = 1;
+
+    if(!ds_factor_a[0])
+        ds_factor_a[0] = 1;
+
+    if(scan->get_width() != hw)
+    {
+        bbounds[1] = int(float(body_bounds_th[1] * scan->get_width()) / hw);
+        bbounds[2] = int(float(body_bounds_th[2] * scan->get_width()) / hw);
+    }
+    else
+    {
+        bbounds[1] = body_bounds_th[1];
+        bbounds[2] = body_bounds_th[2];
+    }
+
+    if(scan->get_height() != hw)
+        bbounds[0] = int(float(body_bounds_th[0] * scan->get_height()) / hw);
+    else
+        bbounds[0] = body_bounds_th[0];
+}
+
+/******************************************************************************
  * lung_segmentation: method for extraction of the binary mask
  *          corresponding to the both lung wings
  *
@@ -60,64 +120,24 @@ LiTS_lung_segmentator::LiTS_lung_segmentator(unsigned int *subsample_factor_,
  *          pointer to the pre-processed volume array and
  *          extracted info about voxel and volume size
  *
- */
+ *****************************************************************************/
 void LiTS_lung_segmentator::lung_segmentation(LiTS_scan *scan)
 {
 
-    unsigned int assumed_hw = 512;
+    // 1. Adjust segmentation parameters
+    unsigned int ds_factor_a[3];
+    float lung_V_th_vox = 0;
+    unsigned int bbounds[3];
+    adjust_segmentation_parameters(scan, ds_factor_a, lung_V_th_vox, bbounds);
 
-    subsample_factor[0] = 4;
-    subsample_factor[1] = 4;
-    subsample_factor[2] = 1;
+    // 2. Lung segmentation
+    unsigned S[3] = {scan->get_width(), scan->get_height(), scan->get_depth()};
+    bool *lungs_mask = new bool[S[0] * S[1] * S[2]];
+    segment_lungs((scan->get_volume())->GetBufferPointer(), S, lungs_mask,
+                  ds_factor, lung_assumed_center_n, body_bounds_th,
+                  lung_V_th_vox, air_threshold);
 
-    float lung_volume_th_vox = lung_volume_threshold /
-                               (scan->get_voxel_height() *
-                                scan->get_voxel_width() *
-                                scan->get_voxel_depth());
-
-    unsigned int size[3] = {scan->get_width(),
-                            scan->get_height(),
-                            scan->get_depth()};
-
-    if(scan->get_width() > scan->get_height())
-        subsample_factor[1] = int(float(subsample_factor[1] *
-                                        scan->get_height()) /
-                                  scan->get_width());
-    if(!subsample_factor[1])
-        subsample_factor[1] = 1;
-
-    if(scan->get_width() < scan->get_height())
-        subsample_factor[0] = int(float(subsample_factor[1] *
-                                        scan->get_width()) /
-                                  scan->get_height());
-    if(!subsample_factor[0])
-        subsample_factor[0] = 1;
-
-    if(size[0] != assumed_hw)
-    {
-        body_bounds_th[1] = int(float(body_bounds_th[1] * size[0]) /
-                                assumed_hw);
-        body_bounds_th[2] = int(float(body_bounds_th[2] * size[0]) /
-                                assumed_hw);
-    }
-
-    if(size[1] != assumed_hw)
-        body_bounds_th[0] = int(float(body_bounds_th[0] * size[1]) /
-                                assumed_hw);
-
-    bool *lungs_mask = new bool[size[0] * size[1] * size[2]];
-    unsigned int *bounds = new unsigned int[4 * size[2]];
-
-    segment_lungs((scan->get_volume())->GetBufferPointer(), size,
-                  lungs_mask, bounds,
-                  subsample_factor, lung_assumed_center_n, body_bounds_th,
-                  lung_volume_th_vox, air_threshold);
-
-    unsigned char *lungs_mask_3 = (unsigned char *)(lungs_mask);
-    for(unsigned int i = 0; i < (size[0] * size[1] * size[2]); i++)
-        if(!lungs_mask[i])
-            lungs_mask_3[i] = 0;
-        else
-            lungs_mask_3[i] = 3;
-    scan->set_lungs_segmentation(lungs_mask_3);
+    // 3. Saving lung segmentation to meta segmentation
+    scan->set_meta_segmentation(lungs_mask, S[0] * S[1] * S[2], 3);
 }
+
