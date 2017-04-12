@@ -185,6 +185,7 @@ void LiTS_scan::set_meta_segmentation(SegmentationType::Pointer
     meta_segmentation = meta_segment_;
 }
 
+
 /******************************************************************************
  * set_meta_segmentation: constructs and sets meta_segmentation member
  * Arguments:
@@ -217,7 +218,58 @@ void LiTS_scan::set_meta_segmentation(unsigned char *meta_segment_)
     meta_segmentation->SetSpacing(spacing);
 
     unsigned int segment_size = w * h * d;
-    memcpy(meta_segmentation->GetBufferPointer(), meta_segment_, segment_size);
+    memcpy(meta_segmentation->GetBufferPointer(), meta_segment_,
+           segment_size * sizeof(unsigned char));
+}
+
+/******************************************************************************
+ * set_meta_segmentation: constructs and sets meta_segmentation member
+ * Arguments:
+ *      meta_segment_: buffer containing lungs segmentation
+ *      len: lenght of buffer
+ *      v: segment label value
+ *****************************************************************************/
+void LiTS_scan::set_meta_segmentation(bool *meta_segment_, unsigned len,
+                                      unsigned char v)
+{
+    meta_segmentation = SegmentationType::New();
+
+    SegmentationType::IndexType desired_start;
+    SegmentationType::SizeType desired_size;
+    SegmentationType::SpacingType spacing;
+
+    desired_start[0] = 0;
+    desired_start[0] = 0;
+    desired_start[0] = 0;
+
+    desired_size[axes_order[0]] = w;
+    desired_size[axes_order[1]] = h;
+    desired_size[axes_order[2]] = d;
+
+    SegmentationType::RegionType desiredRegion(desired_start, desired_size);
+
+    meta_segmentation->SetRegions(desiredRegion);
+    meta_segmentation->Allocate();
+
+    spacing[axes_order[0]] = voxel_w;
+    spacing[axes_order[1]] = voxel_h;
+    spacing[axes_order[2]] = voxel_d;
+    meta_segmentation->SetSpacing(spacing);
+
+    unsigned int segment_size = w * h * d;
+    unsigned char *meta_segment_char = new unsigned char[segment_size];
+
+    if (meta_segmentation.IsNotNull())
+        memcpy(meta_segment_char, meta_segmentation->GetBufferPointer(),
+               segment_size * sizeof(unsigned char));
+    for(unsigned int i = 0; i < segment_size; i++)
+    {
+        if(meta_segment_[i])
+            meta_segment_char[i] = v;
+    }
+    memcpy(meta_segmentation->GetBufferPointer(), meta_segment_,
+           segment_size * sizeof(unsigned char));
+    delete [] meta_segment_char;
 }
 
 /******************************************************************************

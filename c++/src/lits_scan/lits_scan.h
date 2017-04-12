@@ -23,6 +23,7 @@ typedef itk::Image<unsigned char, 3> SegmentationType;
 typedef itk::ImageFileReader<SegmentationType> SegmentationReaderType;
 typedef itk::ImageFileWriter<SegmentationType> SegmentationWriterType;
 
+/******************************************************************************
 /* LiTS_scan a  class for volume and segmentation file management.
  *
  * It has means of volume and segmentation nii file reading,
@@ -106,7 +107,7 @@ typedef itk::ImageFileWriter<SegmentationType> SegmentationWriterType;
  * 		save_tumor_segmentation: save tumor segmentation in nii format
  * 		    in given file
  *
- */
+ *****************************************************************************/
 class LiTS_scan
 {
 
@@ -148,6 +149,7 @@ public:
     void set_segmentation(SegmentationType::Pointer segment_);
     void set_meta_segmentation(SegmentationType::Pointer lungs_segment_);
     void set_meta_segmentation(unsigned char *lungs_segment_);
+    void set_meta_segmentation(bool *segment, unsigned len, unsigned char v);
 
     VolumeType::Pointer get_volume();
     SegmentationType::Pointer get_segmentation();
