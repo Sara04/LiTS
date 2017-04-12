@@ -57,7 +57,7 @@ typedef itk::OrientImageFilter<SegmentationType, SegmentationType>
  * 		get_axes_orientation: get the orientation of the axes
  * 		get_axes_order: get the order of the axes
  *
- ******************************************************************************/
+*******************************************************************************/
 
 class LiTS_processor
 {

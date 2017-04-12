@@ -1,4 +1,4 @@
-#include "pre_and_post_processor_cuda.cuh"
+#include "pre_and_post_processor.cuh"
 #include "lits_processor.h"
 
 
