@@ -134,7 +134,7 @@ void LiTS_lung_segmentator::lung_segmentation(LiTS_scan *scan)
                   ds_factor, lung_assumed_center_n, body_bounds_th,
                   lung_V_th_vox, air_threshold);
 
-    // 3. Saving lung segmentation to meta segmentation
+    // 3. Setting lung segmentation to meta segmentation
     scan->set_meta_segmentation(lungs_mask, S[0] * S[1] * S[2], 3);
 }
 
