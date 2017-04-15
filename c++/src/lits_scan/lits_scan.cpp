@@ -25,6 +25,34 @@ LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_)
 }
 
 /******************************************************************************
+ * LiTS_scan constructor: assigning volume, segmentation and meta segmentation
+ * file paths, volume and segmentation member dynamic construction,
+ *  initializing axes_order and axes_orientation members
+ *
+ * Arguments:
+ *      volume_path_: path to the volume file
+ *      segmentation_path: path to the segmentation (ground truth) file
+ *      meta_segmentation_path: path to the meta segmentation file
+ *****************************************************************************/
+LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_,
+                     std::string meta_segmentation_path_)
+{
+    volume = VolumeType::New();
+    segmentation = SegmentationType::New();
+    meta_segmentation = SegmentationType::New();
+
+    volume_path = volume_path_;
+    segmentation_path = segmentation_path_;
+    meta_segmentation_path = meta_segmentation_path_;
+
+    for(unsigned int i = 0; i < 3; i++)
+    {
+        axes_order[i] = i;
+        axes_orientation[i] = 1;
+    }
+}
+
+/******************************************************************************
  * LiTS_scan constructor: assigning volume file path, volume member dynamic
  * construction, initializing axes_order and axes_orientation members
  *
@@ -266,11 +294,9 @@ void LiTS_scan::set_meta_segmentation(bool *meta_segment_, unsigned len,
         meta_segmentation->SetSpacing(spacing);
     }
     for(unsigned int i = 0; i < segment_size; i++)
-    {
         if(meta_segment_[i])
             meta_segment_char[i] = v;
-    }
-    memcpy(meta_segmentation->GetBufferPointer(), meta_segment_,
+    memcpy(meta_segmentation->GetBufferPointer(), meta_segment_char,
            segment_size * sizeof(unsigned char));
     delete [] meta_segment_char;
 }

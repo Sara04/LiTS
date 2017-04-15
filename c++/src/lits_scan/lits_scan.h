@@ -67,7 +67,7 @@ typedef itk::ImageFileWriter<SegmentationType> SegmentationWriterType;
  *
  * Methods:
  *
- * 		LiTS_scan: constructor
+ * 		LiTS_scan: constructors
  *
  *      //Loaders
  * 		load_volume: loading volume file using volume_reader
@@ -138,6 +138,8 @@ private:
 public:
 
     LiTS_scan(std::string volume_path_, std::string segmentation_path_);
+    LiTS_scan(std::string volume_path_, std::string segmentation_path_,
+              std::string meta_segmentation_path_);
     LiTS_scan(std::string volume_path_);
 
     void load_volume();
