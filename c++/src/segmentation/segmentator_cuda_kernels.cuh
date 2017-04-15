@@ -1,12 +1,12 @@
 /*
- * lung_segmentator_cuda_kernels.cuh
+ * segmentator_cuda_kernels.cuh
  *
  *  Created on: Apr 8, 2017
  *      Author: sara
  */
 
-#ifndef LUNG_SEGMENTATOR_CUDA_KERNELS_CUH_
-#define LUNG_SEGMENTATOR_CUDA_KERNELS_CUH_
+#ifndef SEGMENTATOR_CUDA_KERNELS_CUH_
+#define SEGMENTATOR_CUDA_KERNELS_CUH_
 
 #define MAX_THREADS 1024
 
@@ -21,7 +21,7 @@
  *      air_mask: output air mask
  *      threshold: threshold which defines air regions
 ******************************************************************************/
-__global__ void volume_air_segmentation_gpu(const float *volume,
+__global__ inline void volume_air_segmentation_gpu(const float *volume,
                                             unsigned w, unsigned h, unsigned d,
                                             bool *air_mask, float threshold)
 {
@@ -43,7 +43,7 @@ __global__ void volume_air_segmentation_gpu(const float *volume,
  *      front_threshold: threshold for body front detection
  *      back_threshold: threshold for body back detection
 ******************************************************************************/
-__global__ void detect_body_bounds_gpu(const bool *air_mask, unsigned *bounds,
+__global__ inline void detect_body_bounds_gpu(const bool *air_mask, unsigned *bounds,
                                        unsigned w, unsigned h, unsigned d,
                                        unsigned side_threshold,
                                        unsigned front_threshold,
@@ -102,6 +102,27 @@ __global__ void detect_body_bounds_gpu(const bool *air_mask, unsigned *bounds,
     }
 }
 
+/******************************************************************************
+ * get_organ_mask_accs_gpu: accumulate organ mask values over each of the axes
+ *
+ * Arguments:
+ *      meta_mask: pointer to the array containing meta segmentation
+ *      value: value of the organ's label
+ *      accs: accumulators
+******************************************************************************/
+__global__ inline void get_organ_mask_accs_gpu(const unsigned char *meta_mask,
+                                               unsigned char value,
+                                               unsigned int *accs)
+{
+    unsigned int idx = blockIdx.y * gridDim.x * blockDim.x
+                       + blockIdx.x * blockDim.x + threadIdx.x;
+
+    bool i = (meta_mask[idx] == value);
+    atomicAdd(&accs[threadIdx.x], i);
+    atomicAdd(&accs[blockDim.x + blockIdx.x], i);
+    atomicAdd(&accs[gridDim.x + blockDim.x + blockIdx.y], i);
+
+}
 
 
-#endif /* LUNG_SEGMENTATOR_CUDA_KERNELS_CUH_ */
+#endif /* SEGMENTATOR_CUDA_KERNELS_CUH_ */
