@@ -9,8 +9,10 @@
 #define TOOLS_CUDA_CUH_
 
 template<typename T>
-__global__ void subsample_gpu(T *volume, T *sub_volume, unsigned int step0,
-                              unsigned int step1, unsigned int step2)
+__global__ inline void subsample_gpu(T *volume, T *sub_volume,
+                                     unsigned int step0,
+                                     unsigned int step1,
+                                     unsigned int step2)
 {
 
     unsigned int in_idx = (step2 * blockIdx.y * step1 * gridDim.x * step0
@@ -23,7 +25,7 @@ __global__ void subsample_gpu(T *volume, T *sub_volume, unsigned int step0,
 }
 
 template<typename T>
-__global__ void upsample_gpu(T *volume, T *upsampled, T *sub_volume,
+__global__ inline void upsample_gpu(T *volume, T *upsampled, T *sub_volume,
                              unsigned int step0,
                              unsigned int step1,
                              unsigned int step2)
@@ -51,7 +53,7 @@ __global__ void upsample_gpu(T *volume, T *upsampled, T *sub_volume,
 }
 
 template<typename T>
-__global__ void refine_detection(T *upsampled, T *volume)
+__global__ inline void refine_detection(T *upsampled, T *volume)
 {
     unsigned int in_idx = blockIdx.y * gridDim.x * blockDim.x +
                           blockIdx.x * blockDim.x + threadIdx.x;
@@ -78,4 +80,5 @@ __global__ void refine_detection(T *upsampled, T *volume)
         }
     }
 }
+
 #endif /* TOOLS_CUDA_CUH_ */
