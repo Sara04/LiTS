@@ -120,8 +120,12 @@ void lung_central_slice(bool *air, unsigned int * S, float &lungs_c_s)
     }
     lungs_c_s = lung_c / lung_sum;
     int lungs_bottom = int(th_idx_low - 0.2 * (lungs_c_s - th_idx_low));
-    // 5. Remove all air objects below bottom lungs bound
+    int lungs_top = int(th_idx_high +  0.2 * (th_idx_high - lungs_c_s));
+    // 5. Remove all air objects below bottom lungs and above top lungs bound
     for(unsigned int s = 0; s < lungs_bottom; s++)
+        for(unsigned int i = 0; i < (S[0] * S[1]); i++)
+                air[s * S[0] * S[1] + i] = 0.0;
+    for(unsigned int s = lungs_top; s < S[2]; s++)
         for(unsigned int i = 0; i < (S[0] * S[1]); i++)
                 air[s * S[0] * S[1] + i] = 0.0;
 }
@@ -308,5 +312,3 @@ void extract_lung_candidates(const unsigned int *labeled,
         return;
     }
 }
-
-
