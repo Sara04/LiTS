@@ -2,8 +2,8 @@
 #include <fstream>
 
 #include "lung_segmentator.cuh"
-#include "../tools/tools_cuda.cuh"
-#include "lung_segmentator_cuda_kernels.cuh"
+#include "../tools/tools.cuh"
+#include "../segmentation/segmentator_cuda_kernels.cuh"
 
 #define MAX_THREADS 1024
 

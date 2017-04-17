@@ -12,7 +12,7 @@
 #include "lung_segmentator.cuh"
 
 /******************************************************************************
- * LiTS_lung_detector a class for lungs segmentation.
+ * LiTS_lung_segmentator a class for lungs segmentation.
  *
  * It has means of lungs segmentation.
  *
