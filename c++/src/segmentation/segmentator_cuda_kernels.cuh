@@ -121,8 +121,123 @@ __global__ inline void get_organ_mask_accs_gpu(const unsigned char *meta_mask,
     atomicAdd(&accs[threadIdx.x], i);
     atomicAdd(&accs[blockDim.x + blockIdx.x], i);
     atomicAdd(&accs[gridDim.x + blockDim.x + blockIdx.y], i);
+}
+
+/******************************************************************************
+ * get_organ_mask_accs_gpu: accumulate organ mask values over each of the axes
+ *
+ * Arguments:
+ *      meta_mask: pointer to the array containing meta segmentation
+ *      value: value of the organ's label
+ *      accs: accumulators
+******************************************************************************/
+__global__ inline void get_organ_mask_accs_gpu_multiple(
+        const unsigned char *meta_mask, unsigned *lenghts, unsigned *S,
+        unsigned char value, unsigned int *accs, unsigned n_samples)
+{
+    unsigned int idx = blockIdx.y * gridDim.x * blockDim.x
+                       + blockIdx.x * blockDim.x + threadIdx.x;
+
+    if(idx < lenghts[n_samples])
+    {
+        bool v = (meta_mask[idx] == value);
+        if(v)
+        {
+            unsigned int shift = 0;
+            unsigned int j = 0;
+            for(unsigned int i = 0; i < n_samples; i++)
+            {
+                j = i;
+                if (i > 0)
+                    shift += (S[3 * (i - 1)] +
+                              S[3 * (i - 1) + 1] +
+                              S[3 * (i - 1) + 2]);
+                if(idx < lenghts[i + 1])
+                    break;
+            }
+
+            unsigned p = (idx - lenghts[j]);
+            unsigned s = p / (S[3 * j] * S[3 * j + 1]);
+            unsigned r = (p - s * S[3 * j] * S[3 * j + 1]) / S[3 * j];
+            unsigned c = p - s * S[3 * j] * S[3 * j + 1] - r * S[3 * j];
+
+            atomicAdd(&accs[shift + c], 1);
+            atomicAdd(&accs[shift + S[3 * j] + r], 1);
+            atomicAdd(&accs[shift + S[3 * j] + S[3 * j + 1] + s], 1);
+        }
+    }
+}
+
+
+__global__ inline void resize_slice_and_crop(float *images, float *images_rs,
+                                             unsigned *bounds,
+                                             unsigned *lenghts,
+                                             unsigned int N_sl,
+                                             unsigned w_rs, unsigned h_rs)
+{
+
+    unsigned int idx = blockIdx.y * gridDim.x * blockDim.x
+                       + blockIdx.x * blockDim.x + threadIdx.x;
+
+    if(idx < (N_sl * w_rs * h_rs))
+    {
+        unsigned s_idx = 0;
+        for(unsigned int i = 0; i < N_sl; i++)
+        {
+            s_idx = i;
+            if(idx < (i + 1) * w_rs * h_rs)
+                break;
+        }
+
+        unsigned p_rs = (idx - s_idx * w_rs * h_rs);
+        unsigned r_rs = p_rs / w_rs;
+        unsigned c_rs = p_rs - r_rs * w_rs;
+
+        float w_sc = float(bounds[4 * s_idx + 1] - bounds[4 * s_idx]) / w_rs;
+        float h_sc = float(bounds[4 * s_idx + 3] - bounds[4 * s_idx + 2]) / h_rs;
+
+        float dw = float(c_rs) * w_sc - floor(float(c_rs) * w_sc);
+        float dh = float(r_rs) * h_sc - floor(float(r_rs) * h_sc);
+        unsigned c = bounds[4 * s_idx] + floor(float(c_rs) * w_sc);
+        unsigned r = bounds[4 * s_idx + 2] + floor(float(r_rs) * h_sc);
+
+        images_rs[idx] = images[lenghts[s_idx] + 512*(r + 1) + (c + 1)] * (dw * dh) +
+                         images[lenghts[s_idx] + 512*r + c] * ((1.0 - dw) * (1.0 - dh)) +
+                         images[lenghts[s_idx] + 512*(r + 1) + c] * (dw * (1.0 - dh)) +
+                         images[lenghts[s_idx] + 512*r + c + 1] * ((1.0 - dw) * dh);
+
+    }
 
 }
 
+__global__ inline void flip_slices(float *images_rs, unsigned int N_sl,
+                                   unsigned w_rs, unsigned h_rs)
+{
+
+    unsigned int idx = blockIdx.y * gridDim.x * blockDim.x +
+                       blockIdx.x * blockDim.x + threadIdx.x;
+
+    if(idx < (N_sl * w_rs * h_rs))
+    {
+        unsigned s_idx = 0;
+        for(unsigned int i = 0; i < N_sl; i++)
+        {
+            s_idx = i;
+            if(idx < (i + 1) * w_rs * h_rs)
+                break;
+        }
+
+        unsigned p_rs = (idx - s_idx * w_rs * h_rs);
+        unsigned r_rs = p_rs / w_rs;
+        unsigned c_rs = p_rs - r_rs * w_rs;
+
+
+        images_rs[N_sl * w_rs * h_rs +
+                  s_idx * w_rs * h_rs +
+                  r_rs * w_rs + (w_rs - 1 - c_rs)] = images_rs[idx];
+
+    }
+
+}
 
 #endif /* SEGMENTATOR_CUDA_KERNELS_CUH_ */
