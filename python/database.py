@@ -1,15 +1,8 @@
 """Class for Liver Tumore Segmentation database management."""
 
 import os
-import natsort
+import natsort as ns
 import numpy as np
-
-# random shuffling of patients' ordinal numbers in case they are ordered
-# according to the institutions where the recordings took place
-
-np.random.seed(1)
-RANDOM_SHUFFLE = np.arange(0, 130)
-np.random.shuffle(RANDOM_SHUFFLE)
 
 
 class LiTSdb(object):
@@ -17,128 +10,338 @@ class LiTSdb(object):
 
     Attributes:
         db_path (str): path to the LiTS database
-        db_batches (list): names of the training batches
-        split_ratios (list): possible database split ratios into
-                             train, valid and test subsets
-        no_subjects (int): total number of patients/scans
-        split_unit (int): the largest number that divides number of subjects
-                          in train, valid and test subsets
-        split_factors (list): multiplication factor used to determine the
-                              number of subjects in train, valid and test
-                              subsets
+        train_db_batches: list of folders containing training data
+        test_batch: list of folders containing testing data
+
+        split_ratios: list of possible training data split ratios
+            into develop-valid-eval subsets
+        split_ratio: selected training data split ratio
+
+        training_subjects: vector for storing subjects' names
+           from the training batches
+        development_subjects: vector for storing subjects' names
+           for algorithm development/training
+        validation_subjects: vector for storing subjects' names
+           for algorithm validation
+        evaluation_subjects: vector for storing subjects' names
+           for algorithm evaluation
+        testing_subjects: vector for storing subjects' names
+           from the testing batch
+
+        n_train: the total number of training subjects
+        n_develop: the total number of development subjects
+        n_valid: the total number of validation subjects
+        n_eval: the total number of evaluation subjects
+        n_test: the total number of testing subjects
 
     Methods:
-        _load_split_params: determining split_unit and split_factors based
-                            on selected split_ratio
-        get_volume_path: gets full path to the volume scan
-        get_segmentation_path: gets full path to the segmentation file
-        get_subjects_names: gets list of all subjects in the database
-        get_data_split: gets the database split into train, valid and test
-                        subsets
 
+        load_train_subjects_names: loading train subjects' names
+        load_test_subjects_names: loading test subjects' names
+
+        train_data_split: splitting data into development, validation
+            and evaluation parts
+        empty_split: reseting data split
+
+        get_number_of_training: get the total number of training subjects
+        get_number_of_development: get the total number of development subjects
+        get_number_of_validation: get the total number of validation subjects
+        get_number_of_evaluation: get the total number of evaluation subjects
+        get_number_of_testing: get the total number of testing subjects
+
+        get_train_subject_name: get subject's name from the training set
+            at required position
+        get_develop_subject_name: get subject's name from the development set
+            at required position
+        get_valid_subject_name: get subject's name from the validation set
+            at required position
+        get_eval_subject_name: get subject's name from the evaluation set
+            at required position
+        get_test_subject_name: get subject's name from the testing set
+            at required position
+
+        get_train_paths: get training subject's volume and segmentation paths
+        get_train_volume_path: get training subject's volume path
+        get_train_segmentation_path: get training subject's segmentation path
+        get_train_meta_segmentation_path: get training subject's
+          meta segmentation path
+        get_test_volume_path: get testing subject's volume path
+        get_test_segmentation_path: get testing subject's segmentation path
     """
 
-    db_batches = ['Training Batch 1', 'Training Batch 2']
-    split_ratios = ['60_20_20', '40_30_30', '80_10_10']
+    train_db_batches = ['Training Batch 1', 'Training Batch 2']
+    test_batch = "Testing Batch"
+    split_ratios = [[60, 20, 20], [50, 25, 25], [80, 10, 10]]
 
-    def __init__(self, db_path, no_subjects=130, split_ratio='60_20_20'):
+    def __init__(self, db_path):
         """Initialization method for LiTSdb object.
 
-        Args:
+        Arguments:
             db_path (str): path to the LiTSdb database
-            no_subjects (int): total number of patients/scans, default 130
-            split_ratio (str): database split ratios into train, valid and
-                               test subsets, default '60_20_20'
         """
-        assert split_ratio in self.split_ratios
         self.db_path = db_path
-        self.no_subjects = no_subjects
-        self.split_unit = None
-        self.split_factors = None
-        self._load_split_params(split_ratio)
+        self.split_ratio = 0
 
-    def _load_split_params(self, split_ratio):
-        if split_ratio == '60_20_20':
-            self.split_unit = 2 * self.no_subjects / 10
-            self.split_factors = [3, 1, 1]
-        elif split_ratio == '40_30_30':
-            self.split_unit = self.no_subjects / 10
-            self.split_factors = [4, 3, 3]
-        elif split_ratio == '80_10_10':
-            self.split_unit = self.no_subjects / 10
-            self.split_factors = [8, 1, 1]
+        self.training_subjects = []
+        self.development_subjects = []
+        self.validation_subjects = []
+        self.evaluation_subjects = []
+        self.testing_subjects = []
 
-    def get_volume_path(self, s):
-        """Return volume path.
+        self.n_train = 0
+        self.n_develop = 0
+        self.n_valid = 0
+        self.n_eval = 0
+        self.n_test = 0
 
-        Args:
-            s (str): subject/scan ordinal number
+    def load_train_subjects_names(self):
+        """Create list of training subjects."""
+        for tf in self.train_db_batches:
+            files = ns.natsorted(os.listdir(os.path.join(self.db_path, tf)))
+            for f in files:
+                if f.startswith('volume'):
+                    s_name = str.split(str.split(f, '.')[0], '-')[-1]
+                    self.training_subjects.append(s_name)
+        np.random.seed(1)
+        np.random.shuffle(self.training_subjects)
+        self.n_train = len(self.training_subjects)
+
+    def load_test_subjects_names(self):
+        """Create list of testing subjects."""
+        files = os.listdir(os.path.join(self.db_path, self.test_batch))
+        for f in files:
+            if f.startswith('test-volume'):
+                s_name = str.split(str.split(f, '.')[0], '-')[-1]
+                self.testing_subjects.append(s_name)
+        self.n_test = len(self.testing_subjects)
+
+    def train_data_split(self, selected_sr, selected_ss):
+        """Split training data into develop, valid and eval subsets."""
         """
-        if int(s) > 27:
-            sub_db = self.db_batches[1]
+            Arguments:
+                selected_sr: ordinal number of the selected split ratio
+                selected_ss: ordinal number of split shift
+        """
+        assert selected_sr < len(self.split_ratios),\
+            "The total number of possible split ratios is: %d"\
+            % len(self.split_ratios)
+
+        max_shifts = 100 / self.split_ratios[selected_sr][-1]
+
+        assert selected_ss < max_shifts,\
+            "The total number of split shifts is: %d" % max_shifts
+
+        self.empty_split()
+
+        n = float(self.n_train) / max_shifts
+        self.n_develop = int(self.split_ratios[selected_sr][0] /
+                             (100 / max_shifts) * n)
+
+        self.n_valid = int(self.split_ratios[selected_sr][1] /
+                           (100 / max_shifts) * n)
+
+        self.n_eval = self.n_train - self.n_develop - self.n_valid
+
+        for i in range(self.n_develop):
+            self.development_subjects.\
+                append(self.training_subjects[(selected_ss * self.n_eval + i) %
+                                              self.n_train])
+
+        for i in range(self.n_valid):
+            self.validation_subjects.\
+                append(self.training_subjects[(selected_ss * self.n_eval +
+                                               self.n_develop + i) %
+                                              self.n_train])
+
+        for i in range(self.n_eval):
+            self.evaluation_subjects.\
+                append(self.training_subjects[(selected_ss * self.n_eval +
+                                               self.n_develop +
+                                               self.n_valid + i) %
+                                              self.n_train])
+
+    def empty_split(self):
+        """Empty dev-valid-eval split."""
+        self.n_develop = 0
+        self.n_valid = 0
+        self.n_eval = 0
+        self.development_subjects = []
+        self.validation_subjects = []
+        self.evaluation_subjects = []
+
+    def get_number_of_training(self):
+        """Return number of training samples."""
+        return self.n_train
+
+    def get_number_of_development(self):
+        """Return number of development samples."""
+        return self.n_develop
+
+    def get_number_of_validation(self):
+        """Return number of validation samples."""
+        return self.n_valid
+
+    def get_number_of_evaluation(self):
+        """Return number of evaluation samples."""
+        return self.n_eval
+
+    def get_number_of_testing(self):
+        """Return number of test samples."""
+        return self.n_test
+
+    def get_train_subject_name(self, position):
+        """Get train subject name from the training list."""
+        """
+            Arguments:
+                position: position of the name in the list
+            Returns:
+                train subject's name
+        """
+        assert position < self.n_train,\
+            "The total number of training samples is: %d" % self.n_train
+        return self.training_subjects[position]
+
+    def get_develop_subject_name(self, position):
+        """Get develop subject name from the development list."""
+        """
+            Arguments:
+                position: position of the name in the list
+            Returns:
+                develop subject's name
+        """
+        assert position < self.n_develop,\
+            "The total number of development samples is: %d" % self.n_develop
+        return self.development_subjects[position]
+
+    def get_valid_subject_name(self, position):
+        """Get valid subject name from the validation list."""
+        """
+            Arguments:
+                position: position of the name in the list
+            Returns:
+                valid subject's name
+        """
+        assert position < self.n_valid,\
+            "The total number of validation samples is: %d" % self.n_valid
+        return self.validation_subjects[position]
+
+    def get_eval_subject_name(self, position):
+        """Get eval subject name from the evaluation list."""
+        """
+            Arguments:
+                position: position of the name in the list
+            Returns:
+                eval subject's name
+        """
+        assert position < self.n_eval,\
+            "The total number of evaluation samples is: %d" % self.n_eval
+        return self.evaluation_subjects[position]
+
+    def get_test_subject_name(self, position):
+        """Get test subject name from the testing list."""
+        """
+            Arguments:
+                position: position of the name in the list
+            Returns:
+                test subject's name
+        """
+        assert position < self.n_test,\
+            "The total number of testing samples is: %d" % self.n_test
+        return self.testing_subjects[position]
+
+    def get_train_paths(self, subject_name):
+        """Create train volume and segmentation path."""
+        """
+        Arguments:
+            subject_name: name of the subject
+        Returns:
+            full train volume and segmentation paths
+        """
+        if (int(subject_name) < 28):
+            db_batch = "/Training Batch 1"
         else:
-            sub_db = self.db_batches[0]
-        return os.path.join(self.db_path,
-                            sub_db, '-'.join(['volume', s]) + '.nii')
+            db_batch = "/Training Batch 2"
 
-    def get_segmentation_path(self, s):
-        """Return segmentation path.
+        volume_path = self.db_path + db_batch + "/volume-" +\
+            subject_name + ".nii"
 
-        Args:
-            s (str): subject/scan ordinal number
+        segmentation_path = self.db_path + db_batch + "/segmentation-" +\
+            subject_name + ".nii"
+
+        return volume_path, segmentation_path
+
+    def get_train_volume_path(self, subject_name):
+        """Create train volume path."""
         """
-        if int(s) > 27:
-            sub_db = self.db_batches[1]
+        Arguments:
+            subject_name: name of the subject
+        Returns:
+            full train volume path
+        """
+        if (int(subject_name) < 28):
+            db_batch = "/Training Batch 1"
         else:
-            sub_db = self.db_batches[0]
-        return os.path.join(self.db_path,
-                            sub_db, '-'.join(['segmentation', s]) + '.nii')
+            db_batch = "/Training Batch 2"
 
-    def get_subjects_names(self):
-        """Return list of all subjects in the database."""
-        subjects = []
-        for db_batch in self.db_batches:
+        volume_path = self.db_path + db_batch + "/volume-" +\
+            subject_name + ".nii"
 
-            files = os.listdir(os.path.join(self.db_path, db_batch))
+        return volume_path
 
-            for fi in files:
-                if fi.startswith('.') or fi.startswith('volume'):
-                    continue
-                s = str.split(fi, '-')[1][:-4]
-                if s not in subjects:
-                    subjects.append(s)
-
-        return natsort.natsorted(subjects)
-
-    def get_data_split(self, subjects, protocol_no=1):
-        """Return database split into train, valid and test subsets.
-
-        Args:
-            subjects (list): list of all subjects in the database
-            protocol_no (int): number that determines at which point
-                               in the list of subjects, selections for
-                               training, valid and test subsets start
+    def get_train_segmentation_path(self, subject_name):
+        """Create train segmentation path."""
         """
-        training = []
-        validation = []
-        testing = []
+        Arguments:
+            subject_name: name of the subject
+        Returns:
+            full train segmentation path
+        """
+        if (int(subject_name) < 28):
+            db_batch = "/Training Batch 1"
+        else:
+            db_batch = "/Training Batch 2"
 
-        for s_idx in range((protocol_no - 1) * self.split_unit,
-                           ((protocol_no - 1) +
-                            self.split_factors[0]) * self.split_unit):
-            training.append(subjects[RANDOM_SHUFFLE[s_idx % self.no_subjects]])
+        segmentation_path = self.db_path + db_batch + "/segmentation-" +\
+            subject_name + ".nii"
 
-        for s_idx in range(((protocol_no - 1) + self.split_factors[0]) *
-                           self.split_unit,
-                           ((protocol_no - 1) + sum(self.split_factors[0:2])) *
-                           self.split_unit):
-            validation.append(
-                subjects[RANDOM_SHUFFLE[s_idx % self.no_subjects]])
+        return segmentation_path
 
-        for s_idx in range(((protocol_no - 1) + sum(self.split_factors[0:2])) *
-                           self.split_unit,
-                           ((protocol_no - 1) + sum(self.split_factors[0:3])) *
-                           self.split_unit):
-            testing.append(subjects[RANDOM_SHUFFLE[s_idx % self.no_subjects]])
+    def get_train_meta_segmentation_path(self, subject_name):
+        """Create train meta segmentation path."""
+        """
+        Arguments:
+            subject_name: name of the subject
+        Returns:
+            full train meta segmentation path
+        """
+        meta_segment_path = self.db_path + "/Training Meta Segmentations" +\
+            "/meta-segmentation-" + subject_name + ".nii"
 
-        return training, validation, testing
+        return meta_segment_path
+
+    def get_test_volume_path(self, subject_name, volume_path):
+        """Create test segmentation path."""
+        """
+        Arguments:
+            subject_name: name of the subject
+        Returns:
+            full test volume path
+        """
+        volume_path = self.db_path + "/Testing Batch" + "/test-volume-" +\
+            subject_name + ".nii"
+
+        return volume_path
+
+    def get_test_segmentation_path(self, subject_name):
+        """Create test segmentation path."""
+        """
+        Arguments:
+            subject_name: name of the subject
+        Returns:
+            full test segmentation path
+        """
+        db_batch = "/Testing Results"
+        segmentation_path = self.db_path + db_batch + "/test-segmentation-" +\
+            subject_name + ".nii"
+
+        return segmentation_path
