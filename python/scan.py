@@ -96,6 +96,7 @@ class LiTSscan(object):
         volume_d = slice_data.header.get_data_shape()
         voxel_s = []
         affine_m = slice_data.affine
+        inv = [-1, -1, 1]
 
         self.axes_order = []
         self.axes_orientation = []
@@ -104,12 +105,16 @@ class LiTSscan(object):
                 if affine_m[i, j] != 0:
                     self.axes_order.append(j)
                     voxel_s.append((affine_m[i, j]))
-                    self.axes_orientation.append(2 * (affine_m[i, j] > 0) - 1)
+                    self.axes_orientation.append(2 * (affine_m[i, j] *
+                                                      inv[j] > 0) - 1)
 
         self.w = volume_d[self.axes_order[0]]
         self.h = volume_d[self.axes_order[1]]
         self.d = volume_d[self.axes_order[2]]
 
+        t = self.axes_order[1]
+        self.axes_order[1] = self.axes_order[0]
+        self.axes_order[0] = t
         self.voxel_w, self.voxel_h, self.voxel_d = voxel_s
 
     def set_volume(self, volume):
