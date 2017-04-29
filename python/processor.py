@@ -88,7 +88,9 @@ class LiTSprocessor(object):
                   self.minimum_value)
         scan.set_volume(volume)
 
-    def reorient_volume(self, input_, cord, corient, dord, dorient):
+    def reorient_volume(self, input_,
+                        cord=None, corient=None,
+                        dord=None, dorient=None):
         """Reorient volume: reorient volume axes."""
         """Arguments:
             input_: either LiTSscan object containing volume or
@@ -100,6 +102,10 @@ class LiTSprocessor(object):
         """
         if isinstance(input_, LiTSscan):
             volume = input_.get_volume()
+            cord = input_.get_axes_order()
+            dord = self.get_axes_order()
+            corient = input_.get_axes_orientation()
+            dorient = self.get_axes_orientation()
         else:
             volume = input_
 
@@ -120,7 +126,9 @@ class LiTSprocessor(object):
         else:
             input_ = volume
 
-    def reorient_segmentation(self, input_, cord, corient, dord, dorient):
+    def reorient_segmentation(self, input_,
+                              cord=None, corient=None,
+                              dord=None, dorient=None):
         """Reorient segmentation: reorient segmentation axes."""
         """Arguments:
             input_: either LiTSscan object containing volume or
@@ -132,6 +140,10 @@ class LiTSprocessor(object):
         """
         if isinstance(input_, LiTSscan):
             segment = input_.get_segmentation()
+            cord = input_.get_axes_order()
+            dord = self.get_axes_order()
+            corient = input_.get_axes_orientation()
+            dorient = self.get_axes_orientation()
         else:
             segment = input_
 
