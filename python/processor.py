@@ -15,8 +15,13 @@ class LiTSprocessor(object):
         ord: ordinal number of axes
 
     Methods:
-        preprocess: volume clipping, normalization and if necessary
-                    flipping
+        preprocess_volume: normalize voxel values and reorient axes
+            if necessary
+        normalize_volume: normalize voxel values
+        reorient_volume: reorient volume if necessary
+        reorient_segmentation: reorient segmentation if necessary
+        get_axes_orientation: get desired orientation of the axes
+        get_axes_order: get desired order of the axes
     """
 
     def __init__(self, low_threshold=-300.0, high_threshold=700.0,
