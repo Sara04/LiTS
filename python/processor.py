@@ -1,18 +1,21 @@
 """Class for volume and segmentation processing."""
 import numpy as np
 from scan import LiTSscan
+import tensorflow as tf
+import sys
 
 
 class LiTSprocessor(object):
     """LiTSpreprocessor class for volume normalization and flipping.
 
     Attributes:
-        low_threshold (float): lower volume value limit
-        high_threshold (float): higher volume value limit
-        minimum_value: minimum output value
-        maximum_value: maximum output value
+        low_th (float): lower volume value limit
+        high_th (float): higher volume value limit
+        min_value: minimum output value
+        max_value: maximum output value
         orient: list of orientations
         ord: ordinal number of axes
+        approach: cpu/gpu processing/normalization/reorient approach
 
     Methods:
         preprocess_volume: normalize voxel values and reorient axes
@@ -24,25 +27,89 @@ class LiTSprocessor(object):
         get_axes_order: get desired order of the axes
     """
 
-    def __init__(self, low_threshold=-300.0, high_threshold=700.0,
-                 minimum_value=-0.5, maximum_value=0.5,
-                 orient_=[1, 1, 1], ord_=[1, 0, 2]):
+    def __init__(self, low_th=-300.0, high_th=700.0,
+                 min_value=-0.5, max_value=0.5,
+                 orient_=[1, 1, 1], ord_=[1, 0, 2], approach_='gpu'):
         """Initialization method for LiTSpreprocess object.
 
         Arguments:
-            low_threshold (float): lower volume value limit
-            high_threshold (float): higher volume value limit
-            minimum_value: minimum output value
-            maximum_value: maximum output value
+            low_th (float): lower volume value limit
+            high_th (float): higher volume value limit
+            min_value: min output value
+            max_value: max output value
             orient_: list of orientations
             ord_: ordinal number of axes
+            approach_: cpu/gpu processing/normalization/reorient approach
         """
-        self.low_threshold = low_threshold
-        self.high_threshold = high_threshold
-        self.minimum_value = minimum_value
-        self.maximum_value = maximum_value
+        self.low_th = low_th
+        self.high_th = high_th
+        self.min_value = min_value
+        self.max_value = max_value
         self.orient = orient_
         self.ord = ord_
+        self.approach = approach_
+
+        if self.approach == 'gpu':
+            self.session = tf.Session()
+            self.volume_tf = tf.placeholder('float32', [None, None, None])
+            self.segment_tf = tf.placeholder('uint8', [None, None, None])
+
+    def _normalize_voxel_values_gpu(self, volume):
+
+        h, w, d = volume.shape
+        v_tf = tf.placeholder('float32', [h, w, d])
+        v_n_gpu = ((tf.clip_by_value(v_tf, self.low_th, self.high_th) -
+                    self.low_th) *
+                   (self.max_value - self.min_value) /
+                   (self.high_th - self.low_th) + self.min_value)
+
+        return self.session.run(v_n_gpu, feed_dict={v_tf: volume})
+
+    def _preprocess_volume_gpu(self, volume, axes_orient, axes_tranpose):
+
+        h, w, d = volume.shape
+        v_p_gpu = ((tf.clip_by_value(self.volume_tf,
+                                     self.low_th, self.high_th) -
+                    self.low_th) *
+                   (self.max_value - self.min_value) /
+                   (self.high_th - self.low_th) + self.min_value)
+
+        dims = []
+        if axes_orient[1] != self.orient[1]:
+            dims.append(0)
+        if axes_orient[2] != self.orient[2]:
+            dims.append(2)
+
+        v_p_gpu = tf.reverse(v_p_gpu, dims)
+        v_p_gpu = tf.transpose(v_p_gpu, axes_tranpose)
+
+        return self.session.run(v_p_gpu, feed_dict={self.volume_tf: volume})
+
+    def _reorient_volume_gpu(self, volume, axes_orient, axes_tranpose):
+
+        dims = []
+        if axes_orient[1] != self.orient[1]:
+            dims.append(0)
+        if axes_orient[2] != self.orient[2]:
+            dims.append(2)
+
+        v_r_gpu = tf.reverse(self.volume_tf, dims)
+        v_r_gpu = tf.transpose(v_r_gpu, axes_tranpose)
+
+        return self.session.run(v_r_gpu, feed_dict={self.volume_tf: volume})
+
+    def _reorient_segment_gpu(self, segment, axes_orient, axes_tranpose):
+
+        dims = []
+        if axes_orient[1] != self.orient[1]:
+            dims.append(0)
+        if axes_orient[2] != self.orient[2]:
+            dims.append(2)
+
+        s_r_gpu = tf.reverse(self.segment_tf, dims)
+        s_r_gpu = tf.transpose(s_r_gpu, axes_tranpose)
+
+        return self.session.run(s_r_gpu, feed_dict={self.segment_tf: segment})
 
     def preprocess_volume(self, scan):
         """Preprocess volume: clip, normalize values, reorient axes."""
@@ -52,23 +119,33 @@ class LiTSprocessor(object):
                     about volume
         """
         volume = scan.get_volume()
-        volume = np.clip(volume, self.low_threshold, self.high_threshold)
-
-        volume = ((volume - self.low_threshold) *
-                  (self.maximum_value - self.minimum_value) /
-                  (self.high_threshold - self.low_threshold) +
-                  self.minimum_value)
-        if scan.get_axes_orientation()[1] != self.orient[1]:
-            volume = volume[::-1, :, :]
-        if scan.get_axes_orientation()[2] != self.orient[2]:
-            volume = volume[:, :, ::-1]
-
         tr = []
         for i in range(3):
             for j in range(3):
                 if scan.get_axes_order()[i] == self.get_axes_order()[j]:
                     tr.append(j)
-        volume = volume.transpose(tr)
+
+        if self.approach == 'cpu':
+            volume = np.clip(volume, self.low_th, self.high_th)
+
+            volume = ((volume - self.low_th) *
+                      (self.max_value - self.min_value) /
+                      (self.high_th - self.low_th) +
+                      self.min_value)
+            volume = volume.transpose(tr)
+
+            if scan.get_axes_orientation()[1] != self.orient[1]:
+                volume = volume[::-1, :, :]
+            if scan.get_axes_orientation()[2] != self.orient[2]:
+                volume = volume[:, :, ::-1]
+
+        elif self.approach == 'gpu':
+            volume = self._preprocess_volume_gpu(volume,
+                                                 scan.get_axes_orientation(),
+                                                 tr)
+        else:
+            print("Invalid preprocess approach")
+            sys.exit(2)
 
         scan.set_volume(volume)
 
@@ -80,12 +157,19 @@ class LiTSprocessor(object):
                     about volume
         """
         volume = scan.get_volume()
-        volume = np.clip(volume, self.low_threshold, self.high_threshold)
+        if self.approach == 'cpu':
+            volume = np.clip(volume, self.low_th, self.high_th)
 
-        volume = ((volume - self.low_threshold) *
-                  (self.maximum_value - self.minimum_value) /
-                  (self.high_threshold - self.low_threshold) +
-                  self.minimum_value)
+            volume = ((volume - self.low_th) *
+                      (self.max_value - self.min_value) /
+                      (self.high_th - self.low_th) +
+                      self.min_value)
+        elif self.approach == 'gpu':
+            volume = self._normalize_voxel_values_gpu(volume)
+        else:
+            print("Invalid normalization approach.")
+            sys.exit(2)
+
         scan.set_volume(volume)
 
     def reorient_volume(self, input_,
@@ -109,17 +193,23 @@ class LiTSprocessor(object):
         else:
             volume = input_
 
-        if corient[1] != dorient[1]:
-            volume = volume[::-1, :, :]
-        if corient[2] != dorient[2]:
-            volume = volume[:, :, ::-1]
-
         tr = []
         for i in range(3):
             for j in range(3):
                 if cord[i] == dord[j]:
                     tr.append(j)
-        volume = volume.transpose(tr)
+
+        if self.approach == 'cpu':
+            if corient[1] != dorient[1]:
+                volume = volume[::-1, :, :]
+            if corient[2] != dorient[2]:
+                volume = volume[:, :, ::-1]
+            volume = volume.transpose(tr)
+        elif self.approach == 'gpu':
+            volume = self._reorient_volume_gpu(volume, corient, tr)
+        else:
+            print("Invalid volume reorientation approach.")
+            sys.exit(2)
 
         if isinstance(input_, LiTSscan):
             input_.set_volume(volume)
@@ -147,17 +237,20 @@ class LiTSprocessor(object):
         else:
             segment = input_
 
-        if corient[1] != dorient[1]:
-            segment = segment[::-1, :, :]
-        if corient[2] != dorient[2]:
-            segment = segment[:, :, ::-1]
-
         tr = []
         for i in range(3):
             for j in range(3):
                 if cord[i] == dord[j]:
                     tr.append(j)
-        segment = segment.transpose(tr)
+
+        if self.approach == 'cpu':
+            if corient[1] != dorient[1]:
+                segment = segment[::-1, :, :]
+            if corient[2] != dorient[2]:
+                segment = segment[:, :, ::-1]
+            segment = segment.transpose(tr)
+        elif self.approach == 'gpu':
+            segment = self._reorient_segment_gpu(segment, corient, tr)
 
         if isinstance(input_, LiTSscan):
             input_.set_segmentation(segment)
