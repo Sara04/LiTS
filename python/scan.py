@@ -23,6 +23,9 @@ class LiTSscan(object):
         w_voxel: voxel width (left-right body direction)
         d_voxel: voxel depth (bottom-top body direction)
 
+        header: nii image header
+        affine_m: affine matrix
+
         axes_order: order of the volume's axes
         axes_orientation: orientation of the volume's axes
 
@@ -79,6 +82,9 @@ class LiTSscan(object):
         self.axes_order = None
         self.axes_orientation = None
 
+        self.header = None
+        self.affine_m = None
+
     def load_volume(self):
         """Load and store volume and its hight, width and depth."""
         self.volume = np.array(nib.load(self.volume_path).get_data(),
@@ -93,19 +99,20 @@ class LiTSscan(object):
     def load_info(self):
         """Load scan's axes order and orientation, volume and voxel sizes."""
         slice_data = nib.load(self.volume_path)
-        volume_d = slice_data.header.get_data_shape()
+        self.header = slice_data.header
+        volume_d = self.header.get_data_shape()
         voxel_s = []
-        affine_m = slice_data.affine
+        self.affine_m = slice_data.affine
         inv = [-1, -1, 1]
 
         self.axes_order = []
         self.axes_orientation = []
         for i in range(3):
             for j in range(3):
-                if affine_m[i, j] != 0:
+                if self.affine_m[i, j] != 0:
                     self.axes_order.append(j)
-                    voxel_s.append((affine_m[i, j]))
-                    self.axes_orientation.append(2 * (affine_m[i, j] *
+                    voxel_s.append((self.affine_m[i, j]))
+                    self.axes_orientation.append(2 * (self.affine_m[i, j] *
                                                       inv[j] > 0) - 1)
 
         self.w = volume_d[self.axes_order[0]]
@@ -184,3 +191,13 @@ class LiTSscan(object):
     def get_axes_orientation(self):
         """Get axes orientation."""
         return self.axes_orientation
+
+    def save_meta_segmentation(self, meta_segmentation_path):
+        """Save meta segmentation."""
+        """
+            Arguments:
+                meta_segmentation_path: meta segmentation path
+        """
+        meta_segment_nib = nib.Nifti1Image(self.get_meta_segmentation(),
+                                           self.affine_m, self.header)
+        nib.save(meta_segment_nib, meta_segmentation_path)
