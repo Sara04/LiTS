@@ -280,7 +280,21 @@ class LiTSLungSegmentator(object):
                         r1, r2 = [r * self.ds_f[0], (r + 1) * self.ds_f[0]]
                         c1, c2 = [c * self.ds_f[1], (c + 1) * self.ds_f[1]]
                         lungs_up[r1:r2, c1:c2, s] = air_r[r1:r2, c1:c2, s]
+
         # .....................................................................
-        #  9. Set meta segmentation
+        #  9. Re-labeling in body air
         # .....................................................................
-        sc.set_meta_segmentation(lungs_up * 3)
+        masks, label = measurements.label(lungs_up)
+        labels_list = np.arange(label) + 1
+        object_sizes = np.zeros(label)
+        count_sgnf = 0
+        for l in range(1, label + 1):
+            object_sizes[l - 1] = np.sum(masks == l)
+            if object_sizes[l - 1] > self.lv_th:
+                count_sgnf += 1
+        lungs = self._extract_lung_candidates(count_sgnf, labels_list, masks,
+                                              object_sizes)
+        # .....................................................................
+        #  10. Set meta segmentation
+        # .....................................................................
+        sc.set_meta_segmentation(lungs * 3)
