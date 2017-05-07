@@ -29,7 +29,7 @@ class LiTSprocessor(object):
 
     def __init__(self, low_th=-300.0, high_th=700.0,
                  min_value=-0.5, max_value=0.5,
-                 orient_=[1, 1, 1], ord_=[1, 0, 2], approach_='gpu'):
+                 orient_=[1, 1, 1], ord_=[1, 0, 2], approach_='cpu'):
         """Initialization method for LiTSpreprocess object.
 
         Arguments:
@@ -218,7 +218,8 @@ class LiTSprocessor(object):
 
     def reorient_segmentation(self, input_,
                               cord=None, corient=None,
-                              dord=None, dorient=None):
+                              dord=None, dorient=None,
+                              which='gt'):
         """Reorient segmentation: reorient segmentation axes."""
         """Arguments:
             input_: either LiTSscan object containing volume or
@@ -229,7 +230,13 @@ class LiTSprocessor(object):
             dorient: desired orientation of the volume's axes
         """
         if isinstance(input_, LiTSscan):
-            segment = input_.get_segmentation()
+            if which == 'gt':
+                segment = input_.get_segmentation()
+            elif which == 'meta':
+                segment = input_.get_meta_segmentation()
+            else:
+                print("Invalid segmentation selection.")
+                sys.exit(2)
             cord = input_.get_axes_order()
             dord = self.get_axes_order()
             corient = input_.get_axes_orientation()
@@ -253,7 +260,13 @@ class LiTSprocessor(object):
             segment = self._reorient_segment_gpu(segment, corient, tr)
 
         if isinstance(input_, LiTSscan):
-            input_.set_segmentation(segment)
+            if which == 'gt':
+                input_.set_segmentation(segment)
+            elif which == 'meta':
+                input_.set_meta_segmentation(segment)
+            else:
+                print("Invalid segmentation selection.")
+                sys.exit(2)
         else:
             input_ = segment
 
