@@ -200,4 +200,5 @@ class LiTSscan(object):
         """
         meta_segment_nib = nib.Nifti1Image(self.get_meta_segmentation(),
                                            self.affine_m, self.header)
+        meta_segment_nib.set_data_dtype(np.uint8)
         nib.save(meta_segment_nib, meta_segmentation_path)
