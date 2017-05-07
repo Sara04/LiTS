@@ -119,6 +119,9 @@ class LiTSLungSegmentator(object):
                                 lungs = ((masks == labels_s[i]) +
                                          (masks == labels_s[j]))
                                 lungs_segmented = True
+                                break
+                    if lungs_segmented:
+                        break
                 if not lungs_segmented:
                     dist = np.sum((pos - self.lung_assumed_center_n) ** 2,
                                   axis=1)
