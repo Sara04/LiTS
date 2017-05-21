@@ -96,6 +96,12 @@ class LiTSscan(object):
             np.array(nib.load(self.segmentation_path).get_data(),
                      dtype='uint8').transpose(1, 0, 2)
 
+    def load_meta_segmentation(self):
+        """Load and store ground truth segmentation."""
+        self.meta_segmentation =\
+            np.array(nib.load(self.meta_segmentation_path).get_data(),
+                     dtype='uint8')
+
     def load_info(self):
         """Load scan's axes order and orientation, volume and voxel sizes."""
         slice_data = nib.load(self.volume_path)
