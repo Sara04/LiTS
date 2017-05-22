@@ -69,7 +69,7 @@ int main(int argc, char **argv)
     else
     {
         std::cout<<"\nRunning lung segmentation on training data...\n";
-        run_lungs_segmentation(db);
+        run_train_lungs_segmentation(db);
     }
     /*.......................................................................*/
     /* 3. Body left - right estimation development and validation
