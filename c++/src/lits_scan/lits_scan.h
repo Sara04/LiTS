@@ -19,9 +19,9 @@ namespace fs = boost::filesystem;
 
 typedef itk::Image<float, 3> VolumeType;
 typedef itk::ImageFileReader<VolumeType> VolumeReaderType;
-typedef itk::Image<unsigned char, 3> SegmentationType;
-typedef itk::ImageFileReader<SegmentationType> SegmentationReaderType;
-typedef itk::ImageFileWriter<SegmentationType> SegmentationWriterType;
+typedef itk::Image<unsigned char, 3> SegmentType;
+typedef itk::ImageFileReader<SegmentType> SegmentReaderType;
+typedef itk::ImageFileWriter<SegmentType> SegmentWriterType;
 
 /******************************************************************************
 /* LiTS_scan a  class for volume and segmentation file management.
@@ -35,24 +35,24 @@ typedef itk::ImageFileWriter<SegmentationType> SegmentationWriterType;
  * Attributes:
  *
  * 		volume_path: path to the file that contains volume
- * 		segmentation_path: path to the file that contains segmentation
+ * 		segment_path: path to the file that contains segmentation
  * 			(ground truth)
- * 		meta_segmentation_path: path where is/will be meta segmentation
+ * 		meta_segment_path: path where is/will be meta segmentation
  * 		    stored
  *
  * 		volume: pointer to VolumeType that contains volume data and
  * 			all the information normally provided in nifti format
  * 			(!!! some information fields are not reliable !!!)
- * 		segmentation: pointer to SegmentationType that contains volume
+ * 		segment: pointer to SegmentationType that contains volume
  * 			segmentation (ground truth for liver and tumor) and
  * 			all the information normally provided in nifti format
  * 			(!!! some information fields are not reliable !!!)
- * 		meta_segmentation: pointer to SegmentationType that contains
+ * 		meta_segment: pointer to SegmentationType that contains
  * 		    meta segmentation of lungs, liver and tumor necessary for
  * 		    the development/training
  *
  *      volume_reader: pointer to the reader of the VolumeType data
- *      segmentation_reader: pointer to the reader of the SegmentationType data
+ *      segment_reader: pointer to the reader of the SegmentationType data
  *
  * 		h: volume height (front-back body direction)
  * 		w: volume width (left-right body direction)
@@ -63,7 +63,7 @@ typedef itk::ImageFileWriter<SegmentationType> SegmentationWriterType;
  * 		d_voxel: voxel depth (bottom-top body direction)
  *
  * 		axes_order: order of the volume's axes
- * 		axes_orientation: orientation of the volume's axes
+ * 		axes_orient: orientation of the volume's axes
  *
  * Methods:
  *
@@ -71,16 +71,16 @@ typedef itk::ImageFileWriter<SegmentationType> SegmentationWriterType;
  *
  *      //Loaders
  * 		load_volume: loading volume file using volume_reader
- * 		load_segmentation: loading segmentation file using segmentation
+ * 		load_segment: loading segmentation file using segmentation
  * 			reader
  * 		load_info: loading volume/segmentation info
- * 		load_meta_segmentation: loading meta segmentation file using
+ * 		load_meta_segment: loading meta segmentation file using
  * 		    segmentation reader
  *
  * 		//Getters
  * 		get_volume: get pointer to the volume data
- * 		get_segmentation: get pointer to the segmentation data
- * 	    get_meta_segmentaion: get pointer to the meta segmentation data
+ * 		get_segment: get pointer to the segmentation data
+ * 	    get_meta_segment: get pointer to the meta segmentation data
  *
  * 		get_height: get height of the volume/segmentation
  * 			(front-back body direction)
@@ -94,17 +94,17 @@ typedef itk::ImageFileWriter<SegmentationType> SegmentationWriterType;
  * 		get_voxel_depth: get depth of the voxels (slice distance)
  *
  * 		get_axes_order: get the order of the axes
- * 		get_axes_orientation: get the orientations of the axes
+ * 		get_axes_orient: get the orientations of the axes
  *
  * 		//Setters
  * 		set_volume: set pointer to the volume data
- * 		set_segmentation: set pointer to the segmentation data
- * 		set_meta_segmentation: set pointer to the meta segmentation data
+ * 		set_segment: set pointer to the segmentation data
+ * 		set_meta_segment: set pointer to the meta segmentation data
  *
  * 		//Savers
- * 		save_meta_segmentation: save meta segmentation in nii format
+ * 		save_meta_segment: save meta segmentation in nii format
  * 		    in given file
- * 		save_tumor_segmentation: save tumor segmentation in nii format
+ * 		save_tumor_segment: save tumor segmentation in nii format
  * 		    in given file
  *
  *****************************************************************************/
@@ -114,15 +114,15 @@ class LiTS_scan
 private:
 
     std::string volume_path;
-    std::string segmentation_path;
-    std::string meta_segmentation_path;
+    std::string segment_path;
+    std::string meta_segment_path;
 
     VolumeType::Pointer volume;
-    SegmentationType::Pointer segmentation;
-    SegmentationType::Pointer meta_segmentation;
+    SegmentType::Pointer segment;
+    SegmentType::Pointer meta_segment;
 
     VolumeReaderType::Pointer volume_reader;
-    SegmentationReaderType::Pointer segmentation_reader;
+    SegmentReaderType::Pointer segment_reader;
 
     int h;
     int w;
@@ -133,29 +133,29 @@ private:
     float voxel_d;
 
     unsigned int axes_order[3];
-    short axes_orientation[3];
+    short axes_orient[3];
 
 public:
 
-    LiTS_scan(std::string volume_path_, std::string segmentation_path_);
-    LiTS_scan(std::string volume_path_, std::string segmentation_path_,
-              std::string meta_segmentation_path_);
+    LiTS_scan(std::string volume_path_, std::string segment_path_);
+    LiTS_scan(std::string volume_path_, std::string segment_path_,
+              std::string meta_segment_path_);
     LiTS_scan(std::string volume_path_);
 
     void load_volume();
-    void load_segmentation();
+    void load_segment();
     void load_info();
-    void load_meta_segmentation();
+    void load_meta_segment();
 
     void set_volume(VolumeType::Pointer volume_);
-    void set_segmentation(SegmentationType::Pointer segment_);
-    void set_meta_segmentation(SegmentationType::Pointer lungs_segment_);
-    void set_meta_segmentation(unsigned char *lungs_segment_);
-    void set_meta_segmentation(bool *segment, unsigned len, unsigned char v);
+    void set_segment(SegmentType::Pointer segment_);
+    void set_meta_segment(SegmentType::Pointer lungs_segment_);
+    void set_meta_segment(unsigned char *lungs_segment_);
+    void set_meta_segment(bool *segment, unsigned len, unsigned char v);
 
     VolumeType::Pointer get_volume();
-    SegmentationType::Pointer get_segmentation();
-    SegmentationType::Pointer get_meta_segmentation();
+    SegmentType::Pointer get_segment();
+    SegmentType::Pointer get_meta_segment();
 
     int get_height();
     int get_width();
@@ -166,9 +166,9 @@ public:
     float get_voxel_depth();
 
     unsigned int * get_axes_order();
-    short int * get_axes_orientation();
+    short int * get_axes_orient();
 
-    void save_meta_segmentation(std::string meta_segmentation_path_);
+    void save_meta_segment(std::string meta_segment_path_);
 
 };
 

@@ -14,12 +14,12 @@
 
 #include "liver_side_estimation.h"
 
-void liver_side_estimator_train_and_valid(LiTS_db db)
+void liver_side_estimator_train_and_valid(std::string model_path, LiTS_db db)
 {
-    unsigned N_iters = 10;
+    unsigned N_iters = 1000;
     unsigned N_subj_batch = 5;
     unsigned N_augment = 10;
-    LiTS_liver_side_estimator liver_side_estimator;
+    LiTS_liver_side_estimator liver_side_estimator(model_path);
     LiTS_processor p(-100, 400,-0.5, 0.5);
     float t_acc = 0;
     float v_acc = 0;

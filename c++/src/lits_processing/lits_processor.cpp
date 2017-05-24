@@ -17,10 +17,10 @@
 LiTS_processor::LiTS_processor(float lt, float ut, float min, float max,
                                std::string app)
 {
-    lower_threshold = lt;
-    upper_threshold = ut;
-    minimum_value = min;
-    maximum_value = max;
+    lower_th = lt;
+    upper_th = ut;
+    min_value = min;
+    max_value = max;
     approach = app;
 
     for(unsigned int i = 0; i < 3; i++)
@@ -46,17 +46,17 @@ LiTS_processor::LiTS_processor(float lt, float ut, float min, float max,
 void LiTS_processor::preprocess_volume(LiTS_scan *scan)
 {
     unsigned int *cord = scan->get_axes_order();
-    short *cornt = scan->get_axes_orientation();
+    short *cornt = scan->get_axes_orient();
 
     if (!strcmp(approach.c_str(), "itk"))
     {
         // 1. Voxel values range re-scaling
         RescalerType::Pointer rescaler = RescalerType::New();
         rescaler->SetInput(scan->get_volume());
-        rescaler->SetWindowMinimum(lower_threshold);
-        rescaler->SetWindowMaximum(upper_threshold);
-        rescaler->SetOutputMinimum(minimum_value);
-        rescaler->SetOutputMaximum(maximum_value);
+        rescaler->SetWindowMinimum(lower_th);
+        rescaler->SetWindowMaximum(upper_th);
+        rescaler->SetOutputMinimum(min_value);
+        rescaler->SetOutputMaximum(max_value);
         rescaler->UpdateLargestPossibleRegion();
 
         scan->set_volume(rescaler->GetOutput());
@@ -90,8 +90,7 @@ void LiTS_processor::preprocess_volume(LiTS_scan *scan)
                                scan->get_height(),
                                scan->get_depth(),
                                cord, cornt,
-                               lower_threshold, upper_threshold,
-                               minimum_value, maximum_value);
+                               lower_th, upper_th, min_value, max_value);
 }
 
 /******************************************************************************
@@ -107,10 +106,10 @@ void LiTS_processor::normalize_volume(LiTS_scan *scan)
         // 1. Voxel values range re-scaling
         RescalerType::Pointer rescaler = RescalerType::New();
         rescaler->SetInput(scan->get_volume());
-        rescaler->SetWindowMinimum(lower_threshold);
-        rescaler->SetWindowMaximum(upper_threshold);
-        rescaler->SetOutputMinimum(minimum_value);
-        rescaler->SetOutputMaximum(maximum_value);
+        rescaler->SetWindowMinimum(lower_th);
+        rescaler->SetWindowMaximum(upper_th);
+        rescaler->SetOutputMinimum(min_value);
+        rescaler->SetOutputMaximum(max_value);
         rescaler->UpdateLargestPossibleRegion();
 
         scan->set_volume(rescaler->GetOutput());
@@ -120,8 +119,7 @@ void LiTS_processor::normalize_volume(LiTS_scan *scan)
                               scan->get_width(),
                               scan->get_height(),
                               scan->get_depth(),
-                              lower_threshold, upper_threshold,
-                              minimum_value, maximum_value);
+                              lower_th, upper_th, min_value, max_value);
 }
 
 /******************************************************************************
@@ -148,17 +146,16 @@ void LiTS_processor::reorient_volume(LiTS_scan *scan,
 
         if (reorient or permute)
         {
-            VolumeType::DirectionType direction =
-                    scan->get_volume()->GetDirection();
-            VolumeType::DirectionType desired_orientation;
-            desired_orientation[0][0] = cornt[0];
-            desired_orientation[1][1] = dornt[1];
-            desired_orientation[2][2] = dornt[2];
+            VolumeType::DirectionType dir = scan->get_volume()->GetDirection();
+            VolumeType::DirectionType desired_orient;
+            desired_orient[0][0] = cornt[0];
+            desired_orient[1][1] = dornt[1];
+            desired_orient[2][2] = dornt[2];
 
             OrientVolumeType::Pointer orienter_v = OrientVolumeType::New();
-            orienter_v->SetGivenCoordinateDirection(direction);
+            orienter_v->SetGivenCoordinateDirection(dir);
             orienter_v->SetInput(scan->get_volume());
-            orienter_v->SetDesiredCoordinateDirection(desired_orientation);
+            orienter_v->SetDesiredCoordinateDirection(desired_orient);
             orienter_v->UpdateLargestPossibleRegion();
             scan->set_volume(orienter_v->GetOutput());
         }
@@ -202,9 +199,9 @@ void LiTS_processor::reorient_volume(float * volume,
  *      dord: desired order of the axes
  *      dorient: desired orientation of the axes
 ******************************************************************************/
-void LiTS_processor::reorient_segmentation(LiTS_scan *scan,
-                                           unsigned *cord, short *cornt,
-                                           unsigned *dord, short *dornt)
+void LiTS_processor::reorient_segment(LiTS_scan *scan,
+                                      unsigned *cord, short *cornt,
+                                      unsigned *dord, short *dornt)
 {
     if (!strcmp(approach.c_str(), "itk"))
     {
@@ -215,24 +212,23 @@ void LiTS_processor::reorient_segmentation(LiTS_scan *scan,
 
         if (reorient or permute)
         {
-            SegmentationType::DirectionType direction =
-                    scan->get_segmentation()->GetDirection();
-            SegmentationType::DirectionType desired_orientation;
-            desired_orientation[0][0] = cornt[0];
-            desired_orientation[1][1] = dornt[1];
-            desired_orientation[2][2] = dornt[2];
+            SegmentType::DirectionType dir =
+                    scan->get_segment()->GetDirection();
+            SegmentType::DirectionType desired_orient;
+            desired_orient[0][0] = cornt[0];
+            desired_orient[1][1] = dornt[1];
+            desired_orient[2][2] = dornt[2];
 
-            OrientSegmentationType::Pointer orienter_s =
-                    OrientSegmentationType::New();
-            orienter_s->SetGivenCoordinateDirection(direction);
-            orienter_s->SetInput(scan->get_segmentation());
-            orienter_s->SetDesiredCoordinateDirection(desired_orientation);
+            OrientSegmentType::Pointer orienter_s = OrientSegmentType::New();
+            orienter_s->SetGivenCoordinateDirection(dir);
+            orienter_s->SetInput(scan->get_segment());
+            orienter_s->SetDesiredCoordinateDirection(desired_orient);
             orienter_s->UpdateLargestPossibleRegion();
-            scan->set_segmentation(orienter_s->GetOutput());
+            scan->set_segment(orienter_s->GetOutput());
         }
     }
     else
-        reorient_segment_cuda((scan->get_segmentation())-> GetBufferPointer(),
+        reorient_segment_cuda((scan->get_segment())-> GetBufferPointer(),
                               scan->get_width(),
                               scan->get_height(),
                               scan->get_depth(),
@@ -252,10 +248,10 @@ void LiTS_processor::reorient_segmentation(LiTS_scan *scan,
  *      dord: desired order of the axes
  *      dornt: desired orientation of the axes
 ******************************************************************************/
-void LiTS_processor::reorient_segmentation(unsigned char * segment,
-                                           unsigned w, unsigned h, unsigned d,
-                                           unsigned *cord, short *cornt,
-                                           unsigned *dord, short *dornt)
+void LiTS_processor::reorient_segment(unsigned char * segment,
+                                      unsigned w, unsigned h, unsigned d,
+                                      unsigned *cord, short *cornt,
+                                      unsigned *dord, short *dornt)
 {
     reorient_segment_cuda(segment, w, h, d, cord, cornt, dord, dornt);
 }
@@ -263,7 +259,7 @@ void LiTS_processor::reorient_segmentation(unsigned char * segment,
 /******************************************************************************
  * get_axes_orientation: returns the orientation of the axes
 ******************************************************************************/
-short * LiTS_processor::get_axes_orientation()
+short * LiTS_processor::get_axes_orient()
 {
     return orient;
 }

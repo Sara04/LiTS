@@ -9,18 +9,18 @@
  * 		volume_path_: path to the volume file
  *		segmentation_path: path to the segmentation (ground truth) file
  *****************************************************************************/
-LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_)
+LiTS_scan::LiTS_scan(std::string volume_path_, std::string segment_path_)
 {
     volume = VolumeType::New();
-    segmentation = SegmentationType::New();
+    segment = SegmentType::New();
 
     volume_path = volume_path_;
-    segmentation_path = segmentation_path_;
+    segment_path = segment_path_;
 
     for(unsigned int i = 0; i < 3; i++)
     {
         axes_order[i] = i;
-        axes_orientation[i] = 1;
+        axes_orient[i] = 1;
     }
 }
 
@@ -31,24 +31,24 @@ LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_)
  *
  * Arguments:
  *      volume_path_: path to the volume file
- *      segmentation_path: path to the segmentation (ground truth) file
- *      meta_segmentation_path: path to the meta segmentation file
+ *      segment_path: path to the segmentation (ground truth) file
+ *      meta_segment_path: path to the meta segmentation file
  *****************************************************************************/
-LiTS_scan::LiTS_scan(std::string volume_path_, std::string segmentation_path_,
-                     std::string meta_segmentation_path_)
+LiTS_scan::LiTS_scan(std::string volume_path_, std::string segment_path_,
+                     std::string meta_segment_path_)
 {
     volume = VolumeType::New();
-    segmentation = SegmentationType::New();
-    meta_segmentation = SegmentationType::New();
+    segment = SegmentType::New();
+    meta_segment = SegmentType::New();
 
     volume_path = volume_path_;
-    segmentation_path = segmentation_path_;
-    meta_segmentation_path = meta_segmentation_path_;
+    segment_path = segment_path_;
+    meta_segment_path = meta_segment_path_;
 
     for(unsigned int i = 0; i < 3; i++)
     {
         axes_order[i] = i;
-        axes_orientation[i] = 1;
+        axes_orient[i] = 1;
     }
 }
 
@@ -68,7 +68,7 @@ LiTS_scan::LiTS_scan(std::string volume_path_)
     for(unsigned int i = 0; i < 3; i++)
     {
         axes_order[i] = i;
-        axes_orientation[i] = 1;
+        axes_orient[i] = 1;
     }
 }
 
@@ -84,18 +84,17 @@ void LiTS_scan::load_volume()
 }
 
 /******************************************************************************
- * load_segmentation: loading segmentation from the segmentation_path using
+ * load_segment: loading segmentation from the segmentation_path using
  * segmentation_reader
  *****************************************************************************/
-void LiTS_scan::load_segmentation()
+void LiTS_scan::load_segment()
 {
-    if (segmentation.IsNotNull())
+    if (segment.IsNotNull())
     {
-        SegmentationReaderType::Pointer segmentation_reader =
-                SegmentationReaderType::New();
-        segmentation_reader->SetFileName(segmentation_path);
-        segmentation_reader->Update();
-        segmentation = segmentation_reader->GetOutput();
+        SegmentReaderType::Pointer segment_reader = SegmentReaderType::New();
+        segment_reader->SetFileName(segment_path);
+        segment_reader->Update();
+        segment = segment_reader->GetOutput();
     }
     else
     {
@@ -122,7 +121,7 @@ void LiTS_scan::load_info()
             if(direction_v[i][j] != 0)
                 axes_order[i] = j;
         }
-        axes_orientation[axes_order[i]] = direction_v[i][axes_order[i]];
+        axes_orient[axes_order[i]] = direction_v[i][axes_order[i]];
     }
 
     w = size_v[axes_order[0]];
@@ -133,24 +132,20 @@ void LiTS_scan::load_info()
     voxel_h = spacing[axes_order[1]];
     voxel_d = spacing[axes_order[2]];
 
-    if (segmentation.IsNotNull())
+    if (segment.IsNotNull())
     {
-        SegmentationType::RegionType segment_region = segmentation
-                ->GetLargestPossibleRegion();
-        SegmentationType::SizeType size_s = segment_region.GetSize();
+        SegmentType::RegionType s_region = segment->GetLargestPossibleRegion();
+        SegmentType::SizeType size_s = s_region.GetSize();
 
         if (size_s[0])
-        {
             if (size_v[0] != size_s[0] or size_v[1] != size_s[1]
                 or size_v[2] != size_s[2])
             {
                 std::cout << "Volume path:" << volume_path << std::endl;
-                std::cout << "Segmentation path:" << segmentation_path
-                          << std::endl;
-                std::cout << "Volume and segmentation data are not compatible"
-                          << "\n";
+                std::cout << "Segmentation path:" << segment_path << std::endl;
+                std::cout << "Volume and segmentation data are not compatible";
+                std::cout << "\n";
             }
-        }
         else
         {
             std::cout<<"Segmentation is not loaded"<<std::endl;
@@ -160,20 +155,19 @@ void LiTS_scan::load_info()
 }
 
 /******************************************************************************
- * load_meta_segmentation: loading meta segmentation from the
+ * load_meta_segment: loading meta segmentation from the
  * meta_segmentation_path using segmentation_reader
  *****************************************************************************/
-void LiTS_scan::load_meta_segmentation()
+void LiTS_scan::load_meta_segment()
 {
 
-    if (fs::exists(meta_segmentation_path))
+    if (fs::exists(meta_segment_path))
     {
-        SegmentationReaderType::Pointer segmentation_reader =
-                SegmentationReaderType::New();
-        meta_segmentation = SegmentationType::New();
-        segmentation_reader->SetFileName(meta_segmentation_path);
-        segmentation_reader->Update();
-        meta_segmentation = segmentation_reader->GetOutput();
+        SegmentReaderType::Pointer segment_reader = SegmentReaderType::New();
+        meta_segment = SegmentType::New();
+        segment_reader->SetFileName(meta_segment_path);
+        segment_reader->Update();
+        meta_segment = segment_reader->GetOutput();
     }
     else
     {
@@ -193,112 +187,109 @@ void LiTS_scan::set_volume(VolumeType::Pointer volume_)
 }
 
 /******************************************************************************
- * set_segmentation: sets segmentation member
+ * set_segment: sets segmentation member
  * Arguments:
  *      segment_: pointer to the segmentation data
  *****************************************************************************/
-void LiTS_scan::set_segmentation(SegmentationType::Pointer segment_)
+void LiTS_scan::set_segment(SegmentType::Pointer segment_)
 {
-    segmentation = segment_;
+    segment = segment_;
 }
 
 /******************************************************************************
- * set_meta_segmentation: sets meta_segmentation member
+ * set_meta_segment: sets meta_segment member
  * Arguments:
- *      meta_segment_: pointer to the meta segmentation data
+ *      meta_seg: pointer to the meta segmentation data
  *****************************************************************************/
-void LiTS_scan::set_meta_segmentation(SegmentationType::Pointer
-                                       meta_segment_)
+void LiTS_scan::set_meta_segment(SegmentType::Pointer meta_seg)
 {
-    meta_segmentation = meta_segment_;
+    meta_segment = meta_seg;
 }
 
-
 /******************************************************************************
- * set_meta_segmentation: constructs and sets meta_segmentation member
+ * set_meta_segment: constructs and sets meta_segmentation member
  * Arguments:
- *      meta_segment_: buffer containing lungs segmentation
+ *      meta_seg: buffer containing lungs segmentation
  *****************************************************************************/
-void LiTS_scan::set_meta_segmentation(unsigned char *meta_segment_)
+void LiTS_scan::set_meta_segment(unsigned char *meta_seg)
 {
-    meta_segmentation = SegmentationType::New();
+    meta_segment = SegmentType::New();
 
-    SegmentationType::IndexType desired_start;
-    SegmentationType::SizeType desired_size;
-    SegmentationType::SpacingType spacing;
+    SegmentType::IndexType desired_start;
+    SegmentType::SizeType desired_size;
+    SegmentType::SpacingType spacing;
 
-    desired_start[0] = 0;
-    desired_start[0] = 0;
-    desired_start[0] = 0;
+    for(unsigned int i = 0;i < 3; i++)
+        desired_start[i] = 0;
 
     desired_size[axes_order[0]] = w;
     desired_size[axes_order[1]] = h;
     desired_size[axes_order[2]] = d;
 
-    SegmentationType::RegionType desiredRegion(desired_start, desired_size);
+    SegmentType::RegionType desiredRegion(desired_start, desired_size);
 
-    meta_segmentation->SetRegions(desiredRegion);
-    meta_segmentation->Allocate();
+    meta_segment->SetRegions(desiredRegion);
+    meta_segment->Allocate();
 
     spacing[axes_order[0]] = voxel_w;
     spacing[axes_order[1]] = voxel_h;
     spacing[axes_order[2]] = voxel_d;
-    meta_segmentation->SetSpacing(spacing);
 
-    unsigned int segment_size = w * h * d;
-    memcpy(meta_segmentation->GetBufferPointer(), meta_segment_,
-           segment_size * sizeof(unsigned char));
+    meta_segment->SetSpacing(spacing);
+
+    memcpy(meta_segment->GetBufferPointer(), meta_seg,
+           w * h * d * sizeof(unsigned char));
 }
 
 /******************************************************************************
- * set_meta_segmentation: constructs and sets meta_segmentation member
+ * set_meta_segment: constructs and sets meta_segmentation member
  * it is assumed that meta segmentations have the same orientation
  * Arguments:
- *      meta_segment_: buffer containing lungs segmentation
+ *      meta_seg: buffer containing lungs segmentation
  *      len: lenght of buffer
  *      v: segment label value
  *****************************************************************************/
-void LiTS_scan::set_meta_segmentation(bool *meta_segment_, unsigned len,
-                                      unsigned char v)
+void LiTS_scan::set_meta_segment(bool *meta_seg, unsigned len, unsigned char v)
 {
-    unsigned int segment_size = w * h * d;
-    unsigned char *meta_segment_char = new unsigned char[segment_size];
+    unsigned char *meta_seg_ch = new unsigned char[w * h * d];
 
-    if (meta_segmentation.IsNotNull())
-        memcpy(meta_segment_char, meta_segmentation->GetBufferPointer(),
-               segment_size * sizeof(unsigned char));
+    if (meta_segment.IsNotNull())
+        memcpy(meta_seg_ch, meta_segment->GetBufferPointer(),
+               w * h * d * sizeof(unsigned char));
     else
     {
-        meta_segmentation = SegmentationType::New();
+        meta_segment = SegmentType::New();
 
-        SegmentationType::IndexType desired_start;
-        SegmentationType::SizeType desired_size;
-        SegmentationType::SpacingType spacing;
+        SegmentType::IndexType desired_start;
+        SegmentType::SizeType desired_size;
+        SegmentType::SpacingType spacing;
 
-        desired_start[0] = 0;
-        desired_start[0] = 0;
-        desired_start[0] = 0;
+        for(unsigned int i = 0; i < 3; i++)
+            desired_start[i] = 0;
 
         desired_size[axes_order[0]] = w;
         desired_size[axes_order[1]] = h;
         desired_size[axes_order[2]] = d;
 
-        SegmentationType::RegionType desiredRegion(desired_start, desired_size);
+        SegmentType::RegionType desiredRegion(desired_start, desired_size);
 
-        meta_segmentation->SetRegions(desiredRegion);
-        meta_segmentation->Allocate();
+        meta_segment->SetRegions(desiredRegion);
+        meta_segment->Allocate();
 
         spacing[axes_order[0]] = voxel_w;
         spacing[axes_order[1]] = voxel_h;
         spacing[axes_order[2]] = voxel_d;
-        meta_segmentation->SetSpacing(spacing);
+        meta_segment->SetSpacing(spacing);
     }
-    for(unsigned int i = 0; i < segment_size; i++)
-        if(meta_segment_[i])
-            meta_segment_char[i] = v;
-    memcpy(meta_segmentation->GetBufferPointer(), meta_segment_char,
-           segment_size * sizeof(unsigned char));
-    delete [] meta_segment_char;
+
+    for(unsigned int i = 0; i < w * h * d; i++)
+        if(meta_seg[i])
+            meta_seg_ch[i] = v;
+
+    memcpy(meta_segment->GetBufferPointer(), meta_seg_ch,
+           w * h * d * sizeof(unsigned char));
+
+    delete [] meta_seg_ch;
 }
 
 /******************************************************************************
@@ -310,27 +301,27 @@ VolumeType::Pointer LiTS_scan::get_volume()
 }
 
 /******************************************************************************
- * get_segmentation: returns segmentation pointer
+ * get_segment: returns segmentation pointer
  *****************************************************************************/
-SegmentationType::Pointer LiTS_scan::get_segmentation()
+SegmentType::Pointer LiTS_scan::get_segment()
 {
-    return segmentation;
+    return segment;
 }
 
 /******************************************************************************
- * get_meta_segmentation: returns meta segmentation pointer
+ * get_meta_segment: returns meta segment pointer
  *****************************************************************************/
-SegmentationType::Pointer LiTS_scan::get_meta_segmentation()
+SegmentType::Pointer LiTS_scan::get_meta_segment()
 {
-    return meta_segmentation;
+    return meta_segment;
 }
 
 /******************************************************************************
  * get_axes_order: returns pointer to axes order
  *****************************************************************************/
-short int * LiTS_scan::get_axes_orientation()
+short int * LiTS_scan::get_axes_orient()
 {
-    return axes_orientation;
+    return axes_orient;
 }
 
 /******************************************************************************
@@ -390,16 +381,15 @@ float LiTS_scan::get_voxel_depth()
 }
 
 /******************************************************************************
- * save_meta_segmentation: save meta_segmentation at the input path
+ * save_meta_segment: save meta_segmentation at the input path
  * Arguments:
- *      meta_segmentation_path_: path where to save meta segmentation
+ *      meta_segment_path_: path where to save meta segmentation
  *****************************************************************************/
-void LiTS_scan::save_meta_segmentation(std::string meta_segmentation_path_)
+void LiTS_scan::save_meta_segment(std::string meta_segment_path_)
 {
-    SegmentationWriterType::Pointer segmentation_writer =
-            SegmentationWriterType::New();
+    SegmentWriterType::Pointer segment_writer = SegmentWriterType::New();
 
-    segmentation_writer->SetFileName(meta_segmentation_path_);
-    segmentation_writer->SetInput(meta_segmentation);
-    segmentation_writer->Update();
+    segment_writer->SetFileName(meta_segment_path_);
+    segment_writer->SetInput(meta_segment);
+    segment_writer->Update();
 }

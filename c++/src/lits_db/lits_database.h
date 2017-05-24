@@ -35,19 +35,19 @@ namespace fs = boost::filesystem;
  * 		    "Training Batch 1", "Training Batch 2" and
  * 		    "Testing Batch"
  *
- * 		training_subjects: vector for storing subjects' names
+ * 		train_subjects: vector for storing subjects' names
  * 			from the training batches
- * 		development_subjects: vector for storing subjects' names
+ * 		develop_subjects: vector for storing subjects' names
  * 			for algorithm development/training
- * 		validation_subjects: vector for storing subjects' names
+ * 		valid_subjects: vector for storing subjects' names
  * 			for algorithm validation
- * 		evaluation_subjects: vector for storing subjects' names
+ * 		eval_subjects: vector for storing subjects' names
  * 			for algorithm evaluation
- * 		testing_subjects: vector for storing subjects' names
+ * 		test_subjects: vector for storing subjects' names
  * 			from the testing batch
  *
  * 		n_train: the total number of training subjects
- * 		n_develop: the total number of development subjects
+ * 		n_dev: the total number of development subjects
  * 		n_valid: the total number of validation subjects
  * 		n_eval: the total number of evaluation subjects
  * 		n_test: the total number of testing subjects
@@ -83,11 +83,11 @@ namespace fs = boost::filesystem;
  *
  * 		get_train_paths: get training subject's volume and segmentation paths
  * 		get_train_volume_path: get training subject's volume path
- * 		get_train_segmentation_path: get training subject's segmentation path
- * 		get_train_meta_segmentation_path: get training subject's
+ * 		get_train_segment_path: get training subject's segmentation path
+ * 		get_train_meta_segment_path: get training subject's
  * 		    meta segmentation path
  *      get_test_volume_path: get testing subject's volume path
- *      get_test_segmentation_path: get testing subject's segmentation path
+ *      get_test_segment_path: get testing subject's segmentation path
  *
  */
 
@@ -97,14 +97,14 @@ class LiTS_db
 private:
 
     std::string db_path;
-    std::vector<std::string> training_subjects;
-    std::vector<std::string> development_subjects;
-    std::vector<std::string> validation_subjects;
-    std::vector<std::string> evaluation_subjects;
-    std::vector<std::string> testing_subjects;
+    std::vector<std::string> train_subjects;
+    std::vector<std::string> develop_subjects;
+    std::vector<std::string> valid_subjects;
+    std::vector<std::string> eval_subjects;
+    std::vector<std::string> test_subjects;
 
     int n_train;
-    int n_develop;
+    int n_dev;
     int n_valid;
     int n_eval;
     int n_test;
@@ -132,22 +132,22 @@ public:
 
     void get_train_paths(const std::string subject_name,
                          std::string &volume_path,
-                         std::string &segmentation_path);
+                         std::string &segment_path);
 
     void get_train_volume_path(const std::string subject_name,
                                std::string &volume_path);
 
-    void get_train_segmentation_path(const std::string subject_name,
-                                     std::string &segmentation_path);
+    void get_train_segment_path(const std::string subject_name,
+                                std::string &segment_path);
 
-    void get_train_meta_segmentation_path(const std::string subject_name,
-                                          std::string &meta_segment_path);
+    void get_train_meta_segment_path(const std::string subject_name,
+                                     std::string &meta_segment_path);
 
     void get_test_volume_path(const std::string subject_name,
                               std::string &volume_path);
 
-    void get_test_segmentation_path(const std::string subject_name,
-                                    std::string &segmentation_path);
+    void get_test_segment_path(const std::string subject_name,
+                               std::string &segment_path);
 };
 
 #endif /* LITS_DATABASE_H_ */

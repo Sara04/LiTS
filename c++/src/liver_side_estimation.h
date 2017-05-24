@@ -8,9 +8,6 @@
 #ifndef LIVER_SIDE_ESTIMATION_H_
 #define LIVER_SIDE_ESTIMATION_H_
 
-#include <boost/filesystem.hpp>
-#include <boost/progress.hpp>
-namespace fs = boost::filesystem;
 #include <sys/time.h>
 
 #include "lits_db/lits_database.h"
@@ -18,8 +15,6 @@ namespace fs = boost::filesystem;
 #include "lits_processing/lits_processor.h"
 #include "liver_segmentation/liver_side_estimator.h"
 
-void liver_side_estimator_train_and_valid(LiTS_db db);
-
-
+void liver_side_estimator_train_and_valid(std::string model_path, LiTS_db db);
 
 #endif /* LIVER_SIDE_ESTIMATION_H_ */

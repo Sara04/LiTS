@@ -17,8 +17,7 @@
 typedef itk::IntensityWindowingImageFilter<VolumeType, VolumeType>
         RescalerType;
 typedef itk::OrientImageFilter<VolumeType, VolumeType> OrientVolumeType;
-typedef itk::OrientImageFilter<SegmentationType, SegmentationType>
-        OrientSegmentationType;
+typedef itk::OrientImageFilter<SegmentType, SegmentType> OrientSegmentType;
 
 /******************************************************************************
 /* LiTS_processor a class for volume and segmentation pre and post processing.
@@ -28,12 +27,12 @@ typedef itk::OrientImageFilter<SegmentationType, SegmentationType>
  *
  * Attributes:
  *
- * 		lower_threshold: lower limit for the voxel intensities
- * 		upper_threshold: upper limit for the voxel intensities
+ * 		lower_th: lower limit for the voxel intensities
+ * 		upper_th: upper limit for the voxel intensities
  *
- * 		minimum_value: minimum voxel intensity value in the
+ * 		min_value: minimum voxel intensity value in the
  * 			normalized voxel range
- * 		maximum_value: maximum voxel intensity value in the
+ * 		max_value: maximum voxel intensity value in the
  * 			normalized voxel range
  *
  * 		approach: selection between "itk" (cpu) and "cuda" (gpu)
@@ -52,9 +51,9 @@ typedef itk::OrientImageFilter<SegmentationType, SegmentationType>
  * 		normalize_volume: normalize voxel intensities
  *
  * 		reorient_volume: re-order and/or flip volume axes
- * 		reorient_segmentation: re-order and/or flip segmentation axes
+ * 		reorient_segment: re-order and/or flip segmentation axes
  *
- * 		get_axes_orientation: get the orientation of the axes
+ * 		get_axes_orient: get the orientation of the axes
  * 		get_axes_order: get the order of the axes
  *
 *******************************************************************************/
@@ -63,10 +62,10 @@ class LiTS_processor
 {
 
 private:
-    float lower_threshold;
-    float upper_threshold;
-    float minimum_value;
-    float maximum_value;
+    float lower_th;
+    float upper_th;
+    float min_value;
+    float max_value;
     std::string approach;
     short orient[3];
     unsigned ord[3];
@@ -88,15 +87,15 @@ public:
                          unsigned *cord, short *corient,
                          unsigned *dord, short *dorient);
 
-    void reorient_segmentation(LiTS_scan *scan,
-                               unsigned *cord, short *corient,
-                               unsigned *dord, short *dorient);
-    void reorient_segmentation(unsigned char *segmentation,
-                               unsigned w, unsigned h, unsigned d,
-                               unsigned *cord, short *corient,
-                               unsigned *dord, short *dorient);
+    void reorient_segment(LiTS_scan *scan,
+                          unsigned *cord, short *corient,
+                          unsigned *dord, short *dorient);
+    void reorient_segment(unsigned char *segmentation,
+                          unsigned w, unsigned h, unsigned d,
+                          unsigned *cord, short *corient,
+                          unsigned *dord, short *dorient);
 
-    short* get_axes_orientation();
+    short* get_axes_orient();
     unsigned* get_axes_order();
 
 };
