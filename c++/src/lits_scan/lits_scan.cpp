@@ -138,6 +138,7 @@ void LiTS_scan::load_info()
         SegmentType::SizeType size_s = s_region.GetSize();
 
         if (size_s[0])
+        {
             if (size_v[0] != size_s[0] or size_v[1] != size_s[1]
                 or size_v[2] != size_s[2])
             {
@@ -146,6 +147,7 @@ void LiTS_scan::load_info()
                 std::cout << "Volume and segmentation data are not compatible";
                 std::cout << "\n";
             }
+        }
         else
         {
             std::cout<<"Segmentation is not loaded"<<std::endl;
