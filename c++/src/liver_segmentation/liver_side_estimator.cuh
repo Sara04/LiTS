@@ -27,4 +27,10 @@ void extract_liver_side_ground_truth(unsigned char **masks_gt,
 
 void determine_bounds(unsigned *accs, unsigned *S, unsigned *B, unsigned N_s);
 
+void accumulate_for_mean_gpu(float *input_data, float *mean, unsigned *S);
+
+void accumulate_for_std_gpu(float *input_data, float *std, float *mean, unsigned *S);
+
+void normalize_data(float *data, float *mean, float *std, unsigned *S);
+
 #endif /* LIVER_SIDE_ESTIMATOR_CUH_ */

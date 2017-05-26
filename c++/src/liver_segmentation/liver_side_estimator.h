@@ -16,16 +16,16 @@
 #include <iostream>
 
 /******************************************************************************
-/* LiTS_liver_side_estimator a  class for the estimation at which side liver
- * is placed. It is necessary due to unreliable information about scan
- * orientation provided scans' headers.
- *
- * It has means of training and testing batch creation, estimation training and
- * testing.
+/* LiTS_liver_side_estimator a class for liver side estimation model creation
+ * It has means of neural network model initialization, loading and
+ * pre-processing volume, segmentation and meta segmentation data, liver
+ * side estimation model development, validation, evaluation and testing
  *
  * Attributes:
  *
- *      nn_clf: neural network based liver side classifier
+ *      model_path: path to the directory where the input data mean, std and
+ *          liver side estimation model will be/are saved
+ *      nn_clf: neural network based liver side estimation model
  *      w_rs: width of the input images
  *      h_rs: height of the input images
  *      ext_d: how many mm below lungs bottom training/testing slices should
@@ -36,23 +36,41 @@
  *      nn_clf_on_gpu: flag indicating whether nn_clf is already transfered
  *          to the gpu
  *
- *      training_data: pointer to the training data
- *      training_labels: pointer to the training labels
- *      training_errors: pointer to the training errors
- *      testing_data: pointer to the testing data
- *      testing_labels: pointer to the testing labels
- *      testing_errors: pointer to the testing errors
+ *      mean: pointer to the development data mean
+ *      std: pointer to the development data standard deviation
+ *
+ *      develop_data: pointer to the development (model training) data
+ *      develop_gt: pointer to the development (model training) ground truths
+ *      develop_errors: pointer to the development (model training) errors
+ *
+ *      validate_data: pointer to the model validation data
+ *      validate_gt: pointer to the model validation ground truths
+ *      validate_errors: pointer to the model validation errors
+ *
+ *      eval_data: pointer to the model evaluation data
+ *      eval_gt: pointer to the model evaluation ground truths
+ *      eval_errors: pointer to the model evaluation errors
+ *
+ *      test_data: pointer to the testing data (no ground truths available)
  *
  * Methods:
  *
  *      LiTS_liver_side_estimator: constructor
  *      ~LiTS_liver_side_estimator: destructor
  *
- *      create_training_data: create training data
- *      create_testing_data: create testing data
+ *      compute_mean: compute mean of the development images
+ *      compute_std: compute standard deviation of the development images
+ *      save_mean: save mean array in LSE model's directory
+ *      save_std: save std in LSE model's directory
+ *      load_mean: load mean array from LSE model's directory
+ *      load_std: load std array from LSE model's directory
+ *      create_input_data: create input data for model development, validation,
+ *      evaluation or testing
  *
- *      train_liver_side_estimator: train neural network nn_clf
- *      test_liver_side_estimator: test neural network nn_clf
+ *      develop_liver_side_estimator: train neural network nn_clf
+ *      valid_liver_side_estimator: validate neural network nn_clf
+ *      eval_liver_side_estimator: evaluate neural network nn_clf
+ *      estimate_liver_side: estimate liver side
  *
  *****************************************************************************/
 class LiTS_liver_side_estimator
@@ -60,6 +78,7 @@ class LiTS_liver_side_estimator
 
 private:
 
+    std::string model_path;
     NN nn_clf;
     unsigned w_rs;
     unsigned h_rs;
@@ -67,33 +86,73 @@ private:
     float ext_u;
     unsigned N_slices;
 
-    float *training_data;
-    float *training_gt;
-    float *training_errors;
+    float *mean;
+    float *std;
 
-    float *testing_data;
-    float *testing_gt;
-    float *testing_errors;
+    float *develop_data;
+    float *develop_gt;
+    float *develop_errors;
+
+    float *validate_data;
+    float *validate_gt;
+    float *validate_errors;
+
+    float *eval_data;
+    float *eval_gt;
+    float *eval_errors;
+
+    float *test_data;
 
     bool nn_clf_on_gpu;
 
 public:
 
-    LiTS_liver_side_estimator(unsigned w_rs_=64, unsigned h_rs_=48,
+    LiTS_liver_side_estimator(std::string model_path_,
+                              unsigned w_rs_=64, unsigned h_rs_=48,
                               float ext_d_=25.0, float ext_u_=5.0);
     ~LiTS_liver_side_estimator();
 
-    void create_training_data(std::vector<LiTS_scan> train_scans_batch,
-                              unsigned N_augment);
+    void compute_mean(LiTS_db &db, LiTS_processor &p);
+    void compute_std(LiTS_db &db, LiTS_processor &p);
 
-    void create_testing_data(std::vector<LiTS_scan> test_scans_batch);
+    void save_mean();
+    void save_std();
+    void save_model();
 
-    void train_liver_side_estimator(LiTS_db &db, LiTS_processor &p,
-                                    unsigned N_iters,
-                                    unsigned N_subj_batch,
-                                    unsigned N_augment);
+    void load_mean();
+    void load_std();
+    void load_model();
 
-    void test_liver_side_estimator();
+    void load_and_preprocess_scan(LiTS_processor &p, LiTS_scan &ls);
+
+    void get_volume_and_voxel_sizes(LiTS_scan &ls, unsigned *S, float *vox_S);
+
+    void create_input_data(std::vector<LiTS_scan> scans, std::string mode,
+                           unsigned N_augment);
+
+    float develop_liver_side_estimator(LiTS_db &db,
+                                       LiTS_processor &p,
+                                       unsigned N_iters,
+                                       unsigned N_subj_batch,
+                                       unsigned N_augment,
+                                       float learning_rate,
+                                       bool normalize=false);
+
+    float valid_liver_side_estimator(LiTS_db &db,
+                                     LiTS_processor &p,
+                                     unsigned N_subj_batch,
+                                     bool normalize=false);
+
+    float eval_liver_side_estimator(LiTS_db &db,
+                                    LiTS_processor &p,
+                                    std::string scan_name,
+                                    bool normalize=false);
+
+    float estimate_liver_side(LiTS_db &db,
+                              LiTS_processor &p,
+                              std::string scan_name,
+                              bool normalize=false);
+
 };
 
 #endif /* LIVER_SIDE_ESTIMATOR_H_ */

@@ -13,6 +13,63 @@
 
 #define MAX_THREADS 1024
 
+void accumulate_for_mean_gpu(float *input_data, float *acc_mean, unsigned *S)
+{
+    float *acc_mean_d;
+    cudaMalloc((void **)&acc_mean_d, S[0] * S[1] * sizeof(float));
+    cudaMemcpy(acc_mean_d, acc_mean, S[0] * S[1] * sizeof(float),
+               cudaMemcpyHostToDevice);
+
+    float *input_data_d;
+    cudaMalloc((void **)&input_data_d, S[0] * S[1] * S[2] * sizeof(float));
+    cudaMemcpy(input_data_d, input_data, S[0] * S[1] * S[2] * sizeof(float),
+               cudaMemcpyHostToDevice);
+
+    unsigned n_blocks = S[0] * S[1] * S[2] / MAX_THREADS + 1;
+    accumulation_gpu<<<n_blocks, MAX_THREADS>>>(input_data_d,
+                                                acc_mean_d,
+                                                S[0] * S[1] * S[2],
+                                                S[0] * S[1]);
+
+    cudaMemcpy(acc_mean, acc_mean_d, S[0] * S[1] * sizeof(float),
+               cudaMemcpyDeviceToHost);
+
+    cudaFree(acc_mean_d);
+    cudaFree(input_data_d);
+}
+
+void accumulate_for_std_gpu(float *input_data, float *acc_std, float *mean, unsigned *S)
+{
+    float *acc_std_d;
+    cudaMalloc((void **)&acc_std_d, S[0] * S[1] * sizeof(float));
+    cudaMemcpy(acc_std_d, acc_std, S[0] * S[1] * sizeof(float),
+               cudaMemcpyHostToDevice);
+
+    float *mean_d;
+    cudaMalloc((void **)&mean_d, S[0] * S[1] * sizeof(float));
+    cudaMemcpy(mean_d, mean, S[0] * S[1] * sizeof(float),
+               cudaMemcpyHostToDevice);
+
+    float *input_data_d;
+    cudaMalloc((void **)&input_data_d, S[0] * S[1] * S[2] * sizeof(float));
+    cudaMemcpy(input_data_d, input_data, S[0] * S[1] * S[2] * sizeof(float),
+               cudaMemcpyHostToDevice);
+
+    unsigned n_blocks = S[0] * S[1] * S[2] / MAX_THREADS + 1;
+    squared_accumulation_gpu<<<n_blocks, MAX_THREADS>>>(input_data_d,
+                                                        acc_std_d,
+                                                        mean_d,
+                                                        S[0] * S[1] * S[2],
+                                                        S[0] * S[1]);
+
+    cudaMemcpy(acc_std, acc_std_d, S[0] * S[1] * sizeof(float),
+               cudaMemcpyDeviceToHost);
+
+    cudaFree(mean_d);
+    cudaFree(acc_std_d);
+    cudaFree(input_data_d);
+}
+
 void determine_bounds(unsigned *accs, unsigned *S, unsigned *B,  unsigned N_s)
 {
     unsigned int sh = 0;
@@ -170,6 +227,32 @@ void extract_slices(float **Vs, float *sls_rs, unsigned *B,
     cudaFree(sls_rs_d);
 }
 
+void normalize_data(float *data, float *mean, float *std, unsigned *S)
+{
+    float *data_d;
+    cudaMalloc((void **)&data_d, S[0] * S[1] * S[2] * S[3] * sizeof(float));
+    cudaMemcpy(data_d, data, S[0] * S[1] * S[2] * S[3] * sizeof(float),
+               cudaMemcpyHostToDevice);
+
+    float *mean_d;
+    cudaMalloc((void **)&mean_d,S[0] * S[1] * S[2] * sizeof(float));
+    cudaMemcpy(mean_d, mean, S[0] * S[1] * S[2] * sizeof(float),
+               cudaMemcpyHostToDevice);
+
+    float *std_d;
+    cudaMalloc((void **)&std_d,S[0] * S[1] * S[2] * sizeof(float));
+    cudaMemcpy(std_d, std, S[0] * S[1] * S[2] * sizeof(float),
+               cudaMemcpyHostToDevice);
+
+    unsigned n_blcks = S[0] * S[1] * S[2] * S[3] / MAX_THREADS + 1;
+    mean_std_normalization<<<n_blcks, MAX_THREADS>>>(data_d, mean_d, std_d,
+                                                     S[0] * S[1] * S[2] * S[3],
+                                                     S[0] * S[1] * S[2]);
+
+    cudaFree(data_d);
+    cudaFree(mean_d);
+    cudaFree(std_d);
+}
 void extract_liver_side_ground_truth(unsigned char **masks_gt,
                                      unsigned *S, unsigned *Ls,
                                      unsigned N_s, unsigned *B, bool *gt)
