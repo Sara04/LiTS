@@ -383,7 +383,7 @@ void LiTS_db::get_train_meta_segment_path(const std::string subj_name,
                                           std::string &meta_segment_path)
 {
     meta_segment_path = db_path + "/Training Meta Segmentations" +
-                        "/meta-segment-" + subj_name + ".nii";
+                        "/meta-segmentation-" + subj_name + ".nii";
 }
 
 /******************************************************************************
