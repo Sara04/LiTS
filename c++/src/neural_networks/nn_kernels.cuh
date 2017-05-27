@@ -13,8 +13,6 @@
 __device__
 float neuron_activation(float neuron_input)
 {
-    //return 1.0 / (1.0 + exp(-1. * neuron_input));
-
     if(neuron_input > 0)
         return neuron_input;
     else
@@ -24,8 +22,6 @@ float neuron_activation(float neuron_input)
 __device__
 float neuron_activation_derivative(float neuron_input)
 {
-    //float na = neuron_activation(neuron_input);
-    //return na * (1. - na);
     if(neuron_input > 0)
         return 1;
     else
@@ -172,6 +168,79 @@ void propagate_forward_fcn_gpu_train(float *train_neuron_inputs,
                 neuron_activation(train_neuron_inputs[n_in_idx]);
     }
 }
+
+__global__
+void propagate_forward_fcn_gpu_test(float *train_neuron_outputs,
+                                    float *weights_d,
+                                    float *biases_d,
+                                    unsigned N_feats,
+                                    unsigned N_input,
+                                    unsigned N_output,
+                                    long start_ni,
+                                    long start_no,
+                                    long start_w,
+                                    long start_b)
+{
+    unsigned rt = threadIdx.y;
+    unsigned ct = threadIdx.x;
+    unsigned rb = blockIdx.y;
+    unsigned cb = blockIdx.x;
+
+    float v = 0.0;
+
+    unsigned Nb = N_input / BLOCK_SIZE;
+    if(N_input > Nb * BLOCK_SIZE)
+        Nb += 1;
+
+    for(unsigned blc_c=0; blc_c < Nb; blc_c++)
+    {
+        __shared__ float TD[BLOCK_SIZE][BLOCK_SIZE];
+        __shared__ float TW[BLOCK_SIZE][BLOCK_SIZE];
+
+        long d_c_idx = BLOCK_SIZE * blc_c + ct;
+        long w_c_idx = BLOCK_SIZE * cb + ct;
+
+        if(d_c_idx < N_input)
+            TD[rt][ct] = train_neuron_outputs[start_no +
+                                              N_input * BLOCK_SIZE * rb +
+                                              N_input * rt +
+                                              BLOCK_SIZE * blc_c + ct];
+        else
+            TD[rt][ct] = 0.0;
+
+        if(w_c_idx < N_output and d_c_idx < N_input)
+            TW[rt][ct] = weights_d[start_w +
+                                   N_output * BLOCK_SIZE * blc_c +
+                                   N_output * rt +
+                                   BLOCK_SIZE * cb + ct];
+        else
+            TW[rt][ct] = 0.0;
+
+        __syncthreads();
+
+        unsigned b = BLOCK_SIZE;
+        if((blc_c + 1) * BLOCK_SIZE > N_input)
+            b = N_input - blc_c * BLOCK_SIZE;
+
+        for(unsigned i = 0; i < b; i++)
+            v += TD[rt][i] * TW[i][ct];
+
+        __syncthreads();
+    }
+    if(BLOCK_SIZE * cb + ct < N_output)
+    {
+        unsigned n_out_idx = start_no +
+                             N_feats * N_input +
+                             rb * BLOCK_SIZE * N_output + rt * N_output +
+                             cb * BLOCK_SIZE + ct;
+
+
+        float tmp = v + biases_d[start_b + cb * BLOCK_SIZE + ct];
+
+        train_neuron_outputs[n_out_idx] = neuron_activation(tmp);
+    }
+}
+
 
 __global__
 void backpropagate_fcn_gpu_train(float *weights_d, long start_w,

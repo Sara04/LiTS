@@ -11,7 +11,12 @@
 #include <random>
 #include <iostream>
 #include <vector>
+#include <boost/filesystem.hpp>
+#include <boost/progress.hpp>
+#include <fstream>
+#include <sstream>
 
+namespace fs = boost::filesystem;
 
 /******************************************************************************
 /* NN a  class for the nn model creation, training and testing
@@ -23,48 +28,60 @@
  *
  *      layers: vector of neural network layers
  *          possibilities: fcn, cnn, pool
- *      weights: array of pointers to the layer weights on the cpu
- *      weights_d: pointer to the weights to the gpu
- *      delta_weights_d: pointer to the weight updates on the gpu
+ *
+ *      weights: array of pointers to the kernels' weights on the cpu
+ *      weights_d: pointer to the pointer to the kernels' weights on the gpu
+ *      delta_weights_d: pointer to the pointer to the kernels' updates of
+ *          weights on the gpu
  *      W_sizes: pointer to the kernels' sizes
  *
- *      biases: array of the pointers to the layer biases on the cpu
- *      biases_d: pointer to the biases on the gpu
- *      delta_biases_d: pointer to the update of biases on the gpu
- *      b_sizes: pointer to the biases' sizes
+ *      biases: array of the pointers to the biases on the cpu
+ *      biases_d: pointer to the pointer to the biases on the gpu
+ *      delta_biases_d: pointer to the pointer to the updates of the biases
+ *          on the gpu
+ *      b_sizes: pointer to the biases' sizes (lengths)
  *
  *      pool_size: array of the pointers to the pool strides' sizes
  *
- *      training_data_d: pointer to the training data on the gpu
+ *      neuron_inputs_d: pointer to the neuron inputs on gpu
+ *      neuron_outputs_d: pointer to the neuron outputs on gpu
  *
  *
  * Methods:
  *
- *      NN: constructors
+ *      NN: constructors (empty, with random initialization, by loading)
  *      ~NN: destructor
- *      operator= : overload of the assignement operator
+ *
+ *      operator= : overload of the assignment operator
  *
  *      get_layers: get vector of existing layers
- *      get_weights: get pointer to the array of pointers to the layer weights
- *      get_weight_sizes: get pointer to the array of pointer to the kernels'
- *          sizes
- *      get_biases: get pointer to the array of pointers to the layer biases
- *      get_bias_sizes: get pointer to the array of pointers to the biases'
- *          sizes
- *      get_pool_sizes: get pointer to the array of pointers to the strides'
- *          sizes
+ *      get_weights: get pointers to the kernels' weights
+ *      get_weight_sizes: get pointer to the kernels' sizes
+ *      get_biases: get pointer to the biases
+ *      get_bias_sizes: get pointer to the biases' sizes (lengths)
+ *      get_pool_sizes: get pointer to the pool strides' sizes
  *
- *      init_weights: initial kernel weights
+ *      init_weights: initial kernels' weights
  *      init_biases: initial biases
  *
- *      transfer_trainable_parameters: transfer trainable parameters to the
- *          gpu (weights and biases)
+ *      transfer_trainable_parameters_to_gpu: transfer trainable parameters
+ *          from cpu to gpu
+ *      transfer_trainable_parameters_to_cpu: transfer trainable parameters
+ *          from gpu to cpu
  *
- *      propagate_forward: propagate data trough the network forward
- *      propagate_backwards: propagate error trough the network backwards
+ *      propagate_forward_train: propagate data trough the network forward
+ *          for the training process
+ *      propagate_forward_test: propagate data trough the network forward
+ *          for the testing process
+ *      compute_error: compute the classification/regression error given
+ *          the ground truths
+ *      propagate_backwards_train: propagate errors trough the network
+ *          backwards for the training process
  *
+ *      save_model: save network configuration, kernels' weights and biases
  *
  *****************************************************************************/
+
 class NN
 {
 private:
@@ -91,26 +108,31 @@ public:
     NN();
     NN(std::vector<std::string> layers_,
        unsigned **W_sizes_, unsigned **b_sizes_);
+    NN(std::string model_path);
     ~NN();
 
-    NN operator=(NN &nn);
+    NN operator=(const NN &nn);
 
-    std::vector<std::string> get_layers();
-    float ** get_weights();
-    unsigned ** get_weight_sizes();
-    float ** get_biases();
-    unsigned ** get_bias_sizes();
-    unsigned ** get_pool_sizes();
+    std::vector<std::string> get_layers()const;
+    float ** get_weights()const;
+    unsigned ** get_weight_sizes()const;
+    float ** get_biases()const;
+    unsigned ** get_bias_sizes()const;
+    unsigned ** get_pool_sizes()const;
 
     void init_weights(float *W, unsigned *S);
     void init_biases(float *b, unsigned *S);
 
-    void transfer_trainable_parameters();
+    void transfer_trainable_parameters_to_gpu();
+    void transfer_trainable_parameters_to_cpu();
 
     void propagate_forward_train(float *data, unsigned *data_S);
-    void propagate_backwards_train(float *data_gt, unsigned *data_S);
+    void propagate_forward_test(float *data, unsigned *data_S, float *scores);
+    float compute_error(float *data_gt, unsigned *data_S);
+    float propagate_backwards_train(float *data_gt, unsigned *data_S,
+                                    float learning_rate);
+
+    void save_model(std::string model_path);
 };
-
-
 
 #endif /* NN_H_ */
