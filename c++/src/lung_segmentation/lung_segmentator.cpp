@@ -10,11 +10,11 @@
  * 			are considered to belong to the air
  *
  *****************************************************************************/
-LiTS_lung_segmentator::LiTS_lung_segmentator(float lung_volume_threshold_,
-                                             float air_threshold_)
+LiTS_lung_segmentator::LiTS_lung_segmentator(float lung_volume_th_,
+                                             float air_th_)
 {
-    lung_volume_threshold = lung_volume_threshold_;
-    air_threshold = air_threshold_;
+    lung_volume_th = lung_volume_th_;
+    air_th = air_th_;
 }
 
 /******************************************************************************
@@ -25,8 +25,8 @@ LiTS_lung_segmentator::LiTS_lung_segmentator(float lung_volume_threshold_,
  * 		subsample_factor_: sub-sampling factor for each axis
  * 		    by which volume would be down-sampled in order
  * 		    to reduce computation time
- * 		lung_volume_threshold_: assumed lung volume in mm^3
- * 		air_threshold: threshold below which voxel intensities
+ * 		lung_volume_th_: assumed lung volume in mm^3
+ * 		air_th_: threshold below which voxel intensities
  * 			are considered to belong to the air
  * 		lung_assumed_center_n_: assumed center of the lungs mask
  * 			normalized with respect to the volume size along
@@ -36,13 +36,13 @@ LiTS_lung_segmentator::LiTS_lung_segmentator(float lung_volume_threshold_,
  *
  *****************************************************************************/
 LiTS_lung_segmentator::LiTS_lung_segmentator(unsigned int *subsample_factor_,
-                                       float lung_volume_threshold_,
-                                       float air_threshold_,
-                                       float *lung_assumed_center_n_,
-                                       unsigned int *body_bounds_th_)
+                                             float lung_volume_th_,
+                                             float air_th_,
+                                             float *lung_assumed_center_n_,
+                                             unsigned int *body_bounds_th_)
 {
-    lung_volume_threshold = lung_volume_threshold_;
-    air_threshold = air_threshold_;
+    lung_volume_th = lung_volume_th_;
+    air_th = air_th_;
     for (unsigned int i = 0; i < 3; i++)
     {
         ds_factor[i] = subsample_factor_[i];
@@ -66,7 +66,7 @@ void LiTS_lung_segmentator::
                                    float &lung_V_th_vox, unsigned int *bbounds)
 {
 
-    lung_V_th_vox = lung_volume_threshold /
+    lung_V_th_vox = lung_volume_th /
                     (scan->get_voxel_height() *
                      scan->get_voxel_width() *
                      scan->get_voxel_depth());
@@ -132,9 +132,9 @@ void LiTS_lung_segmentator::lung_segmentation(LiTS_scan *scan)
     bool *lungs_mask = new bool[S[0] * S[1] * S[2]];
     segment_lungs((scan->get_volume())->GetBufferPointer(), S, lungs_mask,
                   ds_factor, lung_assumed_center_n, body_bounds_th,
-                  lung_V_th_vox, air_threshold);
+                  lung_V_th_vox, air_th);
 
     // 3. Setting lung segmentation to meta segmentation
-    scan->set_meta_segmentation(lungs_mask, S[0] * S[1] * S[2], 3);
+    scan->set_meta_segment(lungs_mask, S[0] * S[1] * S[2], 3);
 }
 

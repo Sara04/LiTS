@@ -12,16 +12,14 @@
  * normalized, and volume's axes are re-ordered and re-oriented to RAS or LAS
  * coordinate system.
  * !!! Note that the information provided in the scan's header about the axis
- * orientation that is normal to the sagittal view is not reliable!!!
+ * orientation that is normal to the sagittal plane is not reliable!!!
  * After the segmentation, axes of the meta-segmentation are re-ordered and
  * re-oriented to the original state.
  *****************************************************************************/
 #include "run_lungs_segmentation.h"
 
-
 void run_train_lungs_segmentation(LiTS_db db)
 {
-
     LiTS_processor p;
     LiTS_lung_segmentator lung_s;
 
@@ -36,7 +34,7 @@ void run_train_lungs_segmentation(LiTS_db db)
 
         scan_name = db.get_train_subject_name(i);
         db.get_train_volume_path(scan_name, volume_path);
-        db.get_train_meta_segmentation_path(scan_name, meta_segment_path);
+        db.get_train_meta_segment_path(scan_name, meta_segment_path);
 
         LiTS_scan ls(volume_path);
         ls.load_volume();
@@ -45,13 +43,11 @@ void run_train_lungs_segmentation(LiTS_db db)
         p.preprocess_volume(&ls);
         lung_s.lung_segmentation(&ls);
 
-        p.reorient_segmentation(ls.get_meta_segmentation()->GetBufferPointer(),
-                                ls.get_width(), ls.get_height(), ls.get_depth(),
-                                p.get_axes_order(),
-                                p.get_axes_orientation(),
-                                ls.get_axes_order(),
-                                ls.get_axes_orientation());
-        ls.save_meta_segmentation(meta_segment_path);
+        p.reorient_segment(ls.get_meta_segment()->GetBufferPointer(),
+                           ls.get_width(), ls.get_height(), ls.get_depth(),
+                           p.get_axes_order(), p.get_axes_orient(),
+                           ls.get_axes_order(), ls.get_axes_orient());
+        ls.save_meta_segment(meta_segment_path);
 
         ++show_progress;
     }

@@ -20,8 +20,8 @@
  *
  *      ds_factor: factor by which volume would be down-sampled
  *          for certain processing steps in order to reduce computational time
- *      lung_volume_threshold: lower threshold for both lungs in mm^3
- *      air_threshold: threshold below which everything is
+ *      lung_volume_th: lower threshold for both lungs in mm^3
+ *      air_th: threshold below which everything is
  *          considered to be air
  *      lung_assumed_center_n: assumed normalized mass center
  *          of the both lungs together
@@ -42,19 +42,18 @@ class LiTS_lung_segmentator
 private:
 
 	unsigned int ds_factor[3] = {4, 4, 1};
-	float lung_volume_threshold;
-	float air_threshold;
+	float lung_volume_th;
+	float air_th;
 	float lung_assumed_center_n[3] = {0.5, 0.6, 0.9};
 	unsigned int body_bounds_th[3] = {20, 20, 20};
 
 public:
 
-	LiTS_lung_segmentator(float lung_volume_threshold_ = 100.0 * 100.0 * 50.0,
-			              float air_threshold_=-0.49);
+	LiTS_lung_segmentator(float lung_volume_th_ = 100.0 * 100.0 * 50.0,
+			              float air_th_=-0.49);
 
 	LiTS_lung_segmentator(unsigned int *subsample_factor_,
-			              float lung_volume_threshold_,
-			              float air_threshold_,
+			              float lung_volume_th_, float air_th_,
 			              float *lung_assumed_center_n_,
 			              unsigned int *body_bounds_th_);
 
