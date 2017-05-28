@@ -376,14 +376,29 @@ void LiTS_db::get_train_segment_path(const std::string subj_name,
  *
  * Arguments:
  *      subj_name: string containing training subject's name
- *      meta_segment_path: string where the meta segmentation path would
+ *      meta_segment_path: file where the meta segmentation path would
  *      be stored
  *****************************************************************************/
 void LiTS_db::get_train_meta_segment_path(const std::string subj_name,
                                           std::string &meta_segment_path)
 {
-    meta_segment_path = db_path + "/Training Meta Segmentations" +
+    meta_segment_path = db_path + "Training Meta Segmentations" +
                         "/meta-segmentation-" + subj_name + ".nii";
+}
+
+/******************************************************************************
+ * get_train_liver_side_gt_path: creating the liver side ground truth path
+ *
+ * Arguments:
+ *      subj_name: string containing training subject's name
+ *      liver_side_gt_path: file where the liver side ground truth would be
+ *      stored
+ *****************************************************************************/
+void LiTS_db::get_train_liver_side_gt_path(const std::string subj_name,
+                                           std::string &liver_side_gt_path)
+{
+    liver_side_gt_path = db_path + "Training Meta Segmentations" +
+                        "/liver_side_gt-" + subj_name + ".txt";
 }
 
 /******************************************************************************

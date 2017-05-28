@@ -143,6 +143,9 @@ public:
     void get_train_meta_segment_path(const std::string subject_name,
                                      std::string &meta_segment_path);
 
+    void get_train_liver_side_gt_path(const std::string subject_name,
+                                      std::string &liver_side_gt_path);
+
     void get_test_volume_path(const std::string subject_name,
                               std::string &volume_path);
 
