@@ -147,21 +147,22 @@ void extract_lung_bounds(unsigned char **masks_m, unsigned *S, unsigned *Ls,
 }
 
 void extract_slices(float **Vs, float *sls_rs, unsigned *B,
-                    unsigned *S, unsigned N_s, unsigned N_augment,
+                    unsigned *S, unsigned N_s, unsigned N_aug,
                     unsigned N_sl, unsigned N_pix,
                     unsigned w_rs, unsigned h_rs,
-                    unsigned *ts_T, unsigned *ts_B)
+                    unsigned *ts_T, unsigned *ts_B,
+                    unsigned max_shift)
 {
     float *sls_d;
     float *sls_rs_d;
     unsigned int *Ls_bx_d;
     unsigned int *Ls_bx = new unsigned int[N_sl + 1];
-    unsigned int *sls_bx = new unsigned int[4 * N_sl * N_augment];
+    unsigned int *sls_bx = new unsigned int[4 * N_sl * N_aug];
     unsigned int *sls_bx_d;
 
     cudaMalloc((void **)&sls_d, N_pix * sizeof(float));
-    cudaMalloc((void **)&sls_rs_d, 2 * N_sl * N_augment * w_rs * h_rs * sizeof(float));
-    cudaMalloc((void **)&sls_bx_d, 4 * N_sl * N_augment * sizeof(unsigned int));
+    cudaMalloc((void **)&sls_rs_d, 2 * N_sl * N_aug * w_rs * h_rs * sizeof(float));
+    cudaMalloc((void **)&sls_bx_d, 4 * N_sl * N_aug * sizeof(unsigned int));
     cudaMalloc((void **)&Ls_bx_d, (N_sl + 1) * sizeof(unsigned int));
 
     unsigned int inc = 0;
@@ -174,51 +175,34 @@ void extract_slices(float **Vs, float *sls_rs, unsigned *B,
                        cudaMemcpyHostToDevice);
 
             Ls_bx[inc + 1] = Ls_bx[inc] + S[3 * s] * S[3 * s + 1];
-            for(unsigned int a = 0; a < N_augment; a++)
+            for(unsigned int a = 0; a < N_aug; a++)
             {
                 for(unsigned int j = 0; j < 4; j++)
-                    sls_bx[4 * inc * N_augment + a * 4 + j] = B[6 * s + j] + std::rand() % 10;
+                    sls_bx[4 * inc * N_aug + a * 4 + j] =
+                            B[6 * s + j] + std::rand() % max_shift;
             }
             inc += 1;
         }
 
-
-    cudaMemcpy(sls_bx_d, sls_bx, 4 * N_sl * N_augment * sizeof(unsigned),
+    cudaMemcpy(sls_bx_d, sls_bx, 4 * N_sl * N_aug * sizeof(unsigned),
                cudaMemcpyHostToDevice);
     cudaMemcpy(Ls_bx_d, Ls_bx, (N_sl + 1) * sizeof(unsigned),
                cudaMemcpyHostToDevice);
 
-    unsigned int no_blocks = (N_sl * N_augment * w_rs * h_rs) / MAX_THREADS + 1;
+    unsigned int no_blocks = (N_sl * N_aug * w_rs * h_rs) / MAX_THREADS + 1;
 
     resize_slice_and_crop<<<no_blocks, MAX_THREADS>>>(sls_d, sls_rs_d, sls_bx_d,
-                                                 Ls_bx_d, N_sl, N_augment,
-                                                 w_rs, h_rs);
+                                                      Ls_bx_d, N_sl, N_aug,
+                                                      w_rs, h_rs);
 
-    /*
-    float *imgs = new float[N_sl * N_augment * w_rs * h_rs];
-    cudaMemcpy(imgs, sls_rs_d, N_sl * N_augment * w_rs * h_rs * sizeof(float),
+    float *imgs = new float[N_sl * N_aug * w_rs * h_rs];
+    cudaMemcpy(imgs, sls_rs_d, N_sl * N_aug * w_rs * h_rs * sizeof(float),
                cudaMemcpyDeviceToHost);
 
-    for(unsigned int i = 0; i < N_sl * N_augment; i++)
-    {
-        float *img_tmp = new float[w_rs * h_rs];
-        img_tmp = &imgs[i * w_rs * h_rs];
-        for(unsigned j = 0; j < w_rs * h_rs; j++)
-            img_tmp[j] = img_tmp[j] + 0.5;
+    flip_slices<<<no_blocks, MAX_THREADS>>>(sls_rs_d, N_sl * N_aug, w_rs, h_rs);
 
-        cv::Mat segment = cv::Mat(h_rs, w_rs, CV_32F, img_tmp);
-
-        cv::namedWindow( "Display window");
-        cv::imshow( "Display window", segment);
-        cv::waitKey(0);
-
-    }
-    */
-    flip_slices<<<no_blocks, MAX_THREADS>>>(sls_rs_d, N_sl * N_augment, w_rs, h_rs);
-
-    cudaMemcpy(sls_rs, sls_rs_d, 2 * N_sl * N_augment * w_rs * h_rs * sizeof(float),
+    cudaMemcpy(sls_rs, sls_rs_d, 2 * N_sl * N_aug * w_rs * h_rs * sizeof(float),
                cudaMemcpyDeviceToHost);
-
     delete [] sls_bx;
     delete [] Ls_bx;
     cudaFree(Ls_bx_d);

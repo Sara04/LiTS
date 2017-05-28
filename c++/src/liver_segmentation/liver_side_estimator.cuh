@@ -18,7 +18,8 @@ void extract_slices(float **Vs, float *sls_rs, unsigned *B, unsigned *S,
                     unsigned N_s, unsigned N_augment,
                     unsigned N_sl, unsigned N_pix,
                     unsigned w_rs, unsigned h_rs,
-                    unsigned *ts_T, unsigned *ts_B);
+                    unsigned *ts_T, unsigned *ts_B,
+                    unsigned max_shift);
 
 void extract_liver_side_ground_truth(unsigned char **masks_gt,
                                      unsigned *S, unsigned *Ls,
