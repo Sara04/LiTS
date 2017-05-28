@@ -79,6 +79,8 @@ public:
 
     void normalize_volume(LiTS_scan *scan);
 
+    void filter_with_median(LiTS_scan *scan, int k);
+
     void reorient_volume(LiTS_scan *scan,
                          unsigned *cord, short *corient,
                          unsigned *dord, short *dorient);

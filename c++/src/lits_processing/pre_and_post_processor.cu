@@ -102,6 +102,130 @@ __global__ void gpu_normalize(float *volume,
 }
 
 /******************************************************************************
+ * gpu_median_filter_3: median filtering of slices with kernel size 3
+ *
+ * Arguments:
+ *      volume: input volume
+ *      w: volume width
+ *      h: volume height
+ *      d: volume depth
+ *
+ *****************************************************************************/
+__global__ void gpu_median_filter_3(float *volume, float *volume_f,
+                                    unsigned w, unsigned h, unsigned d)
+{
+    unsigned int idx = blockIdx.y * gridDim.x * blockDim.x +
+                       blockIdx.x * blockDim.x + threadIdx.x;
+    int k = 3;
+    if(idx < w * h * d)
+    {
+        int d_idx = idx / (w * h);
+        int r_idx = (idx - d_idx * w * h) / w;
+        int c_idx = (idx - d_idx * w * h - r_idx * w);
+
+        if((c_idx - k / 2) >= 0 and (c_idx + k / 2) < w and
+           (r_idx - k / 2) >= 0 and (r_idx + k / 2) < h)
+        {
+            volume_f[idx] = volume[idx];
+            float array_to_sort[9];
+            for(short i = (- k / 2); i <= (k / 2); i++)
+            {
+                for(short j = (- k / 2); j <= (k / 2); j++)
+                {
+                    int idx_tmp = d_idx * w * h;
+                    idx_tmp += (r_idx + i) * w;
+                    idx_tmp += (c_idx + j);
+                    array_to_sort[(i + k / 2) * k + j + k / 2] = volume[idx_tmp];
+                }
+            }
+
+            float min;
+            unsigned min_idx;
+            for(unsigned i = 0; i < (k * k - 1); i++)
+            {
+                min = array_to_sort[i];
+                min_idx = i;
+                for(unsigned j = (i+1); j < k * k; j++)
+                {
+                    if(array_to_sort[j] < min)
+                    {
+                        min = array_to_sort[j];
+                        min_idx = j;
+                    }
+                }
+                array_to_sort[min_idx] = array_to_sort[i];
+                array_to_sort[i] = min;
+            }
+            volume_f[idx] = array_to_sort[4];
+        }
+        else
+            volume_f[idx] = volume[idx];
+    }
+}
+
+/******************************************************************************
+ * gpu_median_filter_5: median filtering of slices with kernel size 5
+ *
+ * Arguments:
+ *      volume: input volume
+ *      w: volume width
+ *      h: volume height
+ *      d: volume depth
+ *
+ *****************************************************************************/
+__global__ void gpu_median_filter_5(float *volume, float *volume_f,
+                                    unsigned w, unsigned h, unsigned d)
+{
+    unsigned int idx = blockIdx.y * gridDim.x * blockDim.x +
+                       blockIdx.x * blockDim.x + threadIdx.x;
+    int k = 5;
+    if(idx < w * h * d)
+    {
+        int d_idx = idx / (w * h);
+        int r_idx = (idx - d_idx * w * h) / w;
+        int c_idx = (idx - d_idx * w * h - r_idx * w);
+
+        if((c_idx - k / 2) >= 0 and (c_idx + k / 2) < w and
+           (r_idx - k / 2) >= 0 and (r_idx + k / 2) < h)
+        {
+            volume_f[idx] = volume[idx];
+            float array_to_sort[25];
+            for(short i = (- k / 2); i <= (k / 2); i++)
+            {
+                for(short j = (- k / 2); j <= (k / 2); j++)
+                {
+                    int idx_tmp = d_idx * w * h;
+                    idx_tmp += (r_idx + i) * w;
+                    idx_tmp += (c_idx + j);
+                    array_to_sort[(i + k / 2) * k + j + k / 2] = volume[idx_tmp];
+                }
+            }
+
+            float min;
+            unsigned min_idx;
+            for(unsigned i = 0; i < (k * k - 1); i++)
+            {
+                min = array_to_sort[i];
+                min_idx = i;
+                for(unsigned j = (i+1); j < k * k; j++)
+                {
+                    if(array_to_sort[j] < min)
+                    {
+                        min = array_to_sort[j];
+                        min_idx = j;
+                    }
+                }
+                array_to_sort[min_idx] = array_to_sort[i];
+                array_to_sort[i] = min;
+            }
+            volume_f[idx] = array_to_sort[12];
+        }
+        else
+            volume_f[idx] = volume[idx];
+    }
+}
+
+/******************************************************************************
  * reorient_permute: determine if there is a need to re-orient and/or permute
  * axes
  *
@@ -228,6 +352,47 @@ void normalize_volume_cuda(float *in_volume,
                                          minimum_value, maximum_value);
     cudaMemcpy(in_volume, volume_d, volume_B, cudaMemcpyDeviceToHost);
     cudaFree(volume_d);
+}
+
+/******************************************************************************
+ * filter_with_median_cuda: de-noise volume with median filter
+ *
+ * Arguments:
+ *      in_volume: volume to be processed
+ *      w: volume width
+ *      h: volume height
+ *      d: volume depth / number of slices
+ *      k: median kernel's size
+ *
+ *****************************************************************************/
+void filter_with_median_cuda(float *in_volume,
+                             unsigned int w, unsigned int h, unsigned int d,
+                             int k)
+{
+
+    float *volume_d;
+    float *volume_f_d;
+    unsigned int volume_B = h * w * d * sizeof(float);
+
+    cudaMalloc((void **) &volume_d, volume_B);
+    cudaMalloc((void **) &volume_f_d, volume_B);
+    cudaMemcpy(volume_d, in_volume, volume_B, cudaMemcpyHostToDevice);
+
+    dim3 grid(h, d);
+    if(k == 3)
+        gpu_median_filter_3<<<grid, MAX_THREADS>>>(volume_d, volume_f_d,
+                                                   w, h, d);
+    else if(k == 5)
+        gpu_median_filter_5<<<grid, MAX_THREADS>>>(volume_d, volume_f_d,
+                                                   w, h, d);
+    else
+    {
+        std::cout<<"Selected median filter size is not supported"<<std::endl;
+        exit(EXIT_FAILURE);
+    }
+    cudaMemcpy(in_volume, volume_f_d, volume_B, cudaMemcpyDeviceToHost);
+    cudaFree(volume_d);
+    cudaFree(volume_f_d);
 }
 
 /******************************************************************************

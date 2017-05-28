@@ -8,7 +8,6 @@
 #ifndef PRE_AND_POST_PROCESSOR_CUDA_CUH_
 #define PRE_AND_POST_PROCESSOR_CUDA_CUH_
 
-
 void reorient_permute(bool &reorient, bool &permute,
                       unsigned *cord, short *cornt,
                       unsigned *dord, short *dornt);
@@ -23,6 +22,10 @@ void normalize_volume_cuda(float *volume_cpu,
                            unsigned w, unsigned h, unsigned d,
                            float lower_threshold, float upper_threshold,
                            float minimum_value, float maximum_value);
+
+void filter_with_median_cuda(float *volume_cpu,
+                             unsigned w, unsigned h, unsigned d,
+                             int k);
 
 void reorient_permute(bool &reorient, bool &permute,
                       unsigned *cord, short *cornt,

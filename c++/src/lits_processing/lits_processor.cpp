@@ -123,6 +123,22 @@ void LiTS_processor::normalize_volume(LiTS_scan *scan)
 }
 
 /******************************************************************************
+ * filter_with_median: filters each slice with a square median filter of size k
+ *
+ * Arguments:
+ *      scan: pointer to the LiTS_scan object
+ *      k: median filter size
+******************************************************************************/
+void LiTS_processor::filter_with_median(LiTS_scan *scan, int k)
+{
+    filter_with_median_cuda((scan->get_volume())->GetBufferPointer(),
+                            scan->get_width(),
+                            scan->get_height(),
+                            scan->get_depth(),
+                            k);
+}
+
+/******************************************************************************
  * reorient_volume: re-order and/or flip axes if necessary
  *
  * Arguments:
