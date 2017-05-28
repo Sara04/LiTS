@@ -79,7 +79,6 @@ void liver_side_estimator_train_and_valid(std::string model_path, LiTS_db db,
         if(it == 1000)
             lr *= 0.1;
         t_acc = liver_side_estimator.develop_liver_side_estimator(db, p,
-                                                                  N_iters,
                                                                   N_subj_t,
                                                                   N_augment_t,
                                                                   lr,
