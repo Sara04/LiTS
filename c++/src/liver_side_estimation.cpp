@@ -14,6 +14,52 @@
 
 #include "liver_side_estimation.h"
 
+void save_liver_side_ground_truth(LiTS_db db)
+{
+
+    LiTS_liver_side_estimator liver_side_estimator;
+    LiTS_processor p(-100, 400,-0.5, 0.5);
+    boost::progress_display show_progress( db.get_number_of_training() );
+    for(unsigned i = 0; i < db.get_number_of_training() ; i++)
+    {
+        std::string scan_name = db.get_train_subject_name(i);
+        std::string volume_path, segment_path;
+        std::string meta_segment_path, liver_gt_path;
+        db.get_train_paths(scan_name, volume_path, segment_path);
+        db.get_train_meta_segment_path(scan_name, meta_segment_path);
+        db.get_train_liver_side_gt_path(scan_name, liver_gt_path);
+        LiTS_scan ls(volume_path, segment_path, meta_segment_path);
+        liver_side_estimator.load_and_preprocess_scan(p, ls);
+
+        unsigned char ** mask_gt = new unsigned char*[1];
+        unsigned char ** mask_m = new unsigned char*[1];
+        unsigned S[3];
+        float vox_S[3];
+        unsigned int *Ls = new unsigned int[2];
+
+        liver_side_estimator.get_volume_and_voxel_sizes(ls, S, vox_S);
+        Ls[0] = 0;
+        Ls[1] = S[0] * S[1] * S[2];
+        mask_m[0] = (ls.get_meta_segment())->GetBufferPointer();
+        unsigned int *B = new unsigned int[6];
+        extract_lung_bounds(mask_m, S, Ls, 1, B);
+        bool *gt = new bool[1];
+        mask_gt[0] = (ls.get_segment())->GetBufferPointer();
+        extract_liver_side_ground_truth(mask_gt, S, Ls, 1, B, gt);
+
+        std::ofstream gt_file;
+        gt_file.open(liver_gt_path);
+        gt_file<<gt[0]<<std::endl;
+        gt_file.close();
+        delete [] mask_gt;
+        delete [] mask_m;
+        delete [] Ls;
+        delete [] gt;
+        delete [] B;
+        ++show_progress;
+    }
+}
+
 void liver_side_estimator_train_and_valid(std::string model_path, LiTS_db db,
                                           unsigned N_iters,
                                           unsigned N_subj_t,
@@ -23,7 +69,6 @@ void liver_side_estimator_train_and_valid(std::string model_path, LiTS_db db,
 {
     LiTS_liver_side_estimator liver_side_estimator(model_path);
     LiTS_processor p(-100, 400,-0.5, 0.5);
-
     float t_acc = 0;
     float v_acc = 0;
 
@@ -31,13 +76,15 @@ void liver_side_estimator_train_and_valid(std::string model_path, LiTS_db db,
     gettimeofday(&start_time, NULL);
     for(unsigned int it = 0; it < N_iters; it++)
     {
+        if(it == 1000)
+            lr *= 0.1;
         t_acc = liver_side_estimator.develop_liver_side_estimator(db, p,
                                                                   N_iters,
                                                                   N_subj_t,
                                                                   N_augment_t,
                                                                   lr,
                                                                   true);
-        if(it % 100 == 0)
+        if(it % 20 == 0)
             v_acc = liver_side_estimator.valid_liver_side_estimator(db, p,
                                                                     N_subj_v,
                                                                     true);
