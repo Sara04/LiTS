@@ -452,12 +452,17 @@ float compute_error_gpu(float *data_gt, unsigned *data_S,
              data_neuron_outputs_d[0], outputs_N,
              avg_error_d);
     cudaMemcpy(avg_error, avg_error_d, sizeof(float), cudaMemcpyDeviceToHost);
+
     cudaFree(data_gt_d);
     cudaFree(data_neuron_inputs_d[0]);
     cudaFree(data_neuron_outputs_d[0]);
     cudaFree(data_neuron_inputs_d);
     cudaFree(data_neuron_outputs_d);
-    return avg_error[0];
+
+    float avg_p = avg_error[0];
+    delete [] avg_error;
+
+    return avg_p;
 }
 
 /******************************************************************************
@@ -619,7 +624,11 @@ float propagate_backwards_gpu_train(float *data_gt, unsigned *data_S,
     cudaFree(train_neuron_outputs_d[0]);
     cudaFree(train_neuron_inputs_d);
     cudaFree(train_neuron_outputs_d);
-    return avg_error[0];
+
+    float avg_p = avg_error[0];
+    delete [] avg_error;
+
+    return avg_p;
 }
 
 
