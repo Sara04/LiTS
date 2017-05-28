@@ -71,7 +71,7 @@ void LiTS_processor::preprocess_volume(LiTS_scan *scan)
             VolumeType::DirectionType direction =
                     scan->get_volume()->GetDirection();
             VolumeType::DirectionType dornt;
-            dornt[0][0] = cornt[0];
+            dornt[0][0] = orient[0];
             dornt[1][1] = orient[1];
             dornt[2][2] = orient[2];
 
@@ -148,7 +148,7 @@ void LiTS_processor::reorient_volume(LiTS_scan *scan,
         {
             VolumeType::DirectionType dir = scan->get_volume()->GetDirection();
             VolumeType::DirectionType desired_orient;
-            desired_orient[0][0] = cornt[0];
+            desired_orient[0][0] = dornt[0];
             desired_orient[1][1] = dornt[1];
             desired_orient[2][2] = dornt[2];
 
@@ -215,7 +215,7 @@ void LiTS_processor::reorient_segment(LiTS_scan *scan,
             SegmentType::DirectionType dir =
                     scan->get_segment()->GetDirection();
             SegmentType::DirectionType desired_orient;
-            desired_orient[0][0] = cornt[0];
+            desired_orient[0][0] = dornt[0];
             desired_orient[1][1] = dornt[1];
             desired_orient[2][2] = dornt[2];
 

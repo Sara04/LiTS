@@ -82,6 +82,7 @@ public:
     void reorient_volume(LiTS_scan *scan,
                          unsigned *cord, short *corient,
                          unsigned *dord, short *dorient);
+
     void reorient_volume(float *volume,
                          unsigned w, unsigned h, unsigned d,
                          unsigned *cord, short *corient,
@@ -90,6 +91,7 @@ public:
     void reorient_segment(LiTS_scan *scan,
                           unsigned *cord, short *corient,
                           unsigned *dord, short *dorient);
+
     void reorient_segment(unsigned char *segmentation,
                           unsigned w, unsigned h, unsigned d,
                           unsigned *cord, short *corient,
