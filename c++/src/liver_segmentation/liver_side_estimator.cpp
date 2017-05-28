@@ -462,7 +462,6 @@ void LiTS_liver_side_estimator::create_input_data(std::vector<LiTS_scan> ts,
  * Arguments:
  *      db: LiTS_db database
  *      p: initialized pre-processor
- *      N_iters: number of training iterations
  *      N_subj_batch: number of subjects per training batch
  *      N_augment: factor of data augmentation
  *      learning_rate: learning rate used in backpropagation algorithm
@@ -471,7 +470,6 @@ void LiTS_liver_side_estimator::create_input_data(std::vector<LiTS_scan> ts,
  *****************************************************************************/
 float LiTS_liver_side_estimator::
     develop_liver_side_estimator(LiTS_db &db, LiTS_processor &p,
-                                 unsigned N_iters,
                                  unsigned N_subj_batch,
                                  unsigned N_augment,
                                  float learning_rate,

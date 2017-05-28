@@ -134,7 +134,6 @@ public:
 
     float develop_liver_side_estimator(LiTS_db &db,
                                        LiTS_processor &p,
-                                       unsigned N_iters,
                                        unsigned N_subj_batch,
                                        unsigned N_augment,
                                        float learning_rate,
