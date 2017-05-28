@@ -45,7 +45,10 @@ __global__ void gpu_reorient(T *data, T *data_o,
         unsigned int s[3] = {w, h, d};
         unsigned int cord[3] = {cord0, cord1, cord2};
 
-        out_idx += crs[cord[dord[0]]];
+        if(corient0 == dorient0)
+            out_idx += crs[cord[dord[0]]];
+        else
+            out_idx += (s[dord[0]] - 1 - crs[cord[dord[0]]]);
 
         if(corient1 == dorient1)
             out_idx += crs[cord[dord[1]]] * s[dord[0]];
@@ -117,7 +120,7 @@ void reorient_permute(bool &reorient, bool &permute,
                       unsigned *cord, short *cornt,
                       unsigned *dord, short *dornt)
 {
-    for(unsigned int i = 1; i < 3; i++)
+    for(unsigned int i = 0; i < 3; i++)
     {
         if(cornt[i] != dornt[i])
             reorient = true;
@@ -151,7 +154,7 @@ void preprocess_volume_cuda(float *in_volume,
                             float lower_threshold, float upper_threshold,
                             float minimum_value, float maximum_value)
 {
-    short dornt[3] = {0, 1, 1};
+    short dornt[3] = {1, 1, 1};
     unsigned dord[3] = {0, 1, 2};
 
     bool reorient = false;
@@ -269,9 +272,9 @@ void reorient_volume_cuda(float *in_volume,
         gpu_reorient<float><<<grid, MAX_THREADS>>>
                 (volume_d, volume_o_d, w, h, d,
                  cord[0], cord[1], cord[2], dord[0], dord[1], dord[2],
-                 cornt[0], cornt[1], cornt[2], cornt[0], cornt[1], cornt[2]);
+                 cornt[0], cornt[1], cornt[2], dornt[0], dornt[1], dornt[2]);
 
-        cudaMemcpy(in_volume, volume_d, volume_B, cudaMemcpyDeviceToHost);
+        cudaMemcpy(in_volume, volume_o_d, volume_B, cudaMemcpyDeviceToHost);
         cudaFree(volume_d);
         cudaFree(volume_o_d);
     }
