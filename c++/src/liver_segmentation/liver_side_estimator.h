@@ -88,6 +88,7 @@ private:
 
     float *mean;
     float *std;
+    bool mean_std_allocated;
 
     float *develop_data;
     float *develop_gt;
@@ -107,6 +108,7 @@ private:
 
 public:
 
+    LiTS_liver_side_estimator();
     LiTS_liver_side_estimator(std::string model_path_,
                               unsigned w_rs_=64, unsigned h_rs_=48,
                               float ext_d_=25.0, float ext_u_=5.0);

@@ -12,6 +12,13 @@
 #include <opencv2/highgui/highgui.hpp>
 
 /******************************************************************************
+ * LiTS_liver_side_estimator: empty constructor
+ *****************************************************************************/
+LiTS_liver_side_estimator::LiTS_liver_side_estimator()
+{
+    mean_std_allocated = false;
+}
+/******************************************************************************
  * LiTS_liver_side_estimator constructor: input data size initialization,
  * slice selection parameters initialization, nn_clf initialization
  * ???? nn_clf initialization should be updated ????
@@ -40,6 +47,7 @@ LiTS_liver_side_estimator::LiTS_liver_side_estimator(std::string model_path_,
 
     mean = new float[w_rs * h_rs];
     std = new float[w_rs * h_rs];
+    mean_std_allocated = true;
 
     NN nn_init;
     if(fs::exists(model_path + "done_train"))
@@ -85,7 +93,6 @@ LiTS_liver_side_estimator::LiTS_liver_side_estimator(std::string model_path_,
         W_sizes[3][0] = W_sizes[2][1];
         W_sizes[3][1] = 1;
         b_sizes[3][0] = 1;
-
         nn_init = NN(layers, W_sizes, b_sizes);
     }
 
@@ -97,8 +104,11 @@ LiTS_liver_side_estimator::LiTS_liver_side_estimator(std::string model_path_,
  *****************************************************************************/
 LiTS_liver_side_estimator::~LiTS_liver_side_estimator()
 {
-    delete [] mean;
-    delete [] std;
+    if(mean_std_allocated)
+    {
+        delete [] mean;
+        delete [] std;
+    }
 }
 
 /******************************************************************************
@@ -265,6 +275,8 @@ void LiTS_liver_side_estimator::save_std()
  *****************************************************************************/
 void LiTS_liver_side_estimator::save_model()
 {
+
+    nn_clf.transfer_trainable_parameters_to_cpu();
     nn_clf.save_model(model_path);
 }
 
@@ -379,7 +391,7 @@ void LiTS_liver_side_estimator::create_input_data(std::vector<LiTS_scan> ts,
     {
         develop_data = new float[2 * N_sl * N_augment * w_rs * h_rs];
         extract_slices(Vs, develop_data, B, S, N_s, N_augment, N_sl, N_pix,
-                       w_rs, h_rs, ts_T, ts_B);
+                       w_rs, h_rs, ts_T, ts_B, 10);
         develop_gt = new float[2 * N_sl * N_augment];
         unsigned idx = 0;
         for(unsigned int s = 0; s < N_s; s++)
@@ -393,39 +405,41 @@ void LiTS_liver_side_estimator::create_input_data(std::vector<LiTS_scan> ts,
     }
     else if(!strcmp(mode.c_str(), "valid"))
     {
-        validate_data = new float[2 * N_sl * w_rs * h_rs];
-        extract_slices(Vs, validate_data, B, S, N_s, 1, N_sl, N_pix,
-                       w_rs, h_rs, ts_T, ts_B);
-        validate_gt = new float[2 * N_sl];
+        validate_data = new float[2 * N_sl * N_augment * w_rs * h_rs];
+        extract_slices(Vs, validate_data, B, S, N_s, N_augment, N_sl, N_pix,
+                       w_rs, h_rs, ts_T, ts_B, 10);
+        validate_gt = new float[2 * N_sl * N_augment];
         unsigned idx = 0;
         for(unsigned int s = 0; s < N_s; s++)
-            for(unsigned i = 0; i < (ts_T[s] + 1 - ts_B[s]); i++)
-            {
-                validate_gt[idx] = gt[s];
-                validate_gt[N_sl + idx] = 1 - gt[s];
-                idx += 1;
-            }
+            for(unsigned int a = 0; a < N_augment; a++)
+                for(unsigned i = 0; i < (ts_T[s] + 1 - ts_B[s]); i++)
+                {
+                    validate_gt[idx] = gt[s];
+                    validate_gt[N_sl * N_augment + idx] = 1 - gt[s];
+                    idx += 1;
+                }
     }
     else if(!strcmp(mode.c_str(), "eval"))
     {
-        eval_data = new float[2 * N_sl * w_rs * h_rs];
-        extract_slices(Vs, eval_data, B, S, N_s, 1, N_sl, N_pix,
-                       w_rs, h_rs, ts_T, ts_B);
-        eval_gt = new float[2 * N_sl];
+        eval_data = new float[2 * N_sl * N_augment * w_rs * h_rs];
+        extract_slices(Vs, eval_data, B, S, N_s, N_augment, N_sl, N_pix,
+                       w_rs, h_rs, ts_T, ts_B, 10);
+        eval_gt = new float[2 * N_sl * N_augment];
         unsigned idx = 0;
         for(unsigned int s = 0; s < N_s; s++)
-            for(unsigned i = 0; i < (ts_T[s] + 1 - ts_B[s]); i++)
-            {
-                eval_gt[idx] = gt[s];
-                eval_gt[N_sl + idx] = 1 - gt[s];
-                idx += 1;
-            }
+            for(unsigned int a = 0; a < N_augment; a++)
+                for(unsigned i = 0; i < (ts_T[s] + 1 - ts_B[s]); i++)
+                {
+                    eval_gt[idx] = gt[s];
+                    eval_gt[N_sl * N_augment + idx] = 1 - gt[s];
+                    idx += 1;
+                }
     }
     else if(!strcmp(mode.c_str(), "test"))
     {
         test_data = new float[2 * N_sl * w_rs * h_rs];
-        extract_slices(Vs, test_data, B, S, N_s, 1, N_sl, N_pix,
-                       w_rs, h_rs, ts_T, ts_B);
+        extract_slices(Vs, test_data, B, S, N_s, N_augment, N_sl, N_pix,
+                       w_rs, h_rs, ts_T, ts_B, 10);
     }
     N_slices = 2 * N_sl * N_augment;
     // 6. Memory release
@@ -465,7 +479,7 @@ float LiTS_liver_side_estimator::
 {
     if (!nn_clf_on_gpu)
     {
-        nn_clf.transfer_trainable_parameters();
+        nn_clf.transfer_trainable_parameters_to_gpu();
         nn_clf_on_gpu = true;
 
         if(!fs::exists(model_path + "mean.bin"))
@@ -504,8 +518,13 @@ float LiTS_liver_side_estimator::
     if (normalize)
         normalize_data(develop_data, mean, std, dev_S);
     nn_clf.propagate_forward_train(develop_data, dev_S);
-    return nn_clf.propagate_backwards_train(develop_gt, dev_S,
-                                            learning_rate);
+
+    float train_p = nn_clf.propagate_backwards_train(develop_gt, dev_S,
+                                                     learning_rate);
+    delete [] develop_data;
+    delete [] develop_gt;
+
+    return train_p;
 }
 
 /******************************************************************************
@@ -525,7 +544,7 @@ float LiTS_liver_side_estimator::
 {
     if (!nn_clf_on_gpu)
     {
-        nn_clf.transfer_trainable_parameters();
+        nn_clf.transfer_trainable_parameters_to_gpu();
         nn_clf_on_gpu = true;
         load_mean();
         load_std();
@@ -549,7 +568,12 @@ float LiTS_liver_side_estimator::
         normalize_data(validate_data, mean, std, valid_S);
     nn_clf.propagate_forward_train(validate_data, valid_S);
 
-    return nn_clf.compute_error(validate_gt, valid_S);
+    float valid_p = nn_clf.compute_error(validate_gt, valid_S);
+
+    delete [] validate_data;
+    delete [] validate_gt;
+
+    return valid_p;
 }
 
 /******************************************************************************
@@ -571,7 +595,7 @@ float LiTS_liver_side_estimator::
 {
     if (!nn_clf_on_gpu)
     {
-        nn_clf.transfer_trainable_parameters();
+        nn_clf.transfer_trainable_parameters_to_gpu();
         nn_clf_on_gpu = true;
         load_mean();
         load_std();
@@ -586,20 +610,30 @@ float LiTS_liver_side_estimator::
     load_and_preprocess_scan(p, ls);
     eval_scan_batch.push_back(ls);
 
-    create_input_data(eval_scan_batch, "eval", 1);
+    create_input_data(eval_scan_batch, "eval", 10);
+
     unsigned eval_S[4] = {w_rs, h_rs, 1, N_slices};
     if (normalize)
         normalize_data(eval_data, mean, std, eval_S);
 
     unsigned out_len = nn_clf.get_bias_sizes()[(nn_clf.get_layers()).size() -1][0];
-
     float *eval_scores = new float[N_slices * out_len];
     nn_clf.propagate_forward_test(eval_data, eval_S, eval_scores);
 
-    std::cout<<"Scores"<<std::endl;
-    for(unsigned i = 0; i < N_slices; i++)
-        std::cout<<eval_gt[i]<<" "<<eval_scores[i]<<std::endl;
+    float side = 0;
+    for(unsigned int i = 0; i < N_slices/2; i++)
+    {
+            side += eval_scores[i] > 0.5;
+            side += eval_scores[N_slices / 2 + i] <= 0.5;
+    }
 
+    side /= N_slices;
+    std::cout<<"ground truth:"<<eval_gt[0]<<std::endl;
+    std::cout<<"estimated:"<<(side > 0.5)<<std::endl;
+    std::cout<<std::endl;
+
+    delete [] eval_data;
+    delete [] eval_gt;
     delete [] eval_scores;
 
     return 0;
@@ -622,7 +656,7 @@ float LiTS_liver_side_estimator::estimate_liver_side(LiTS_db &db,
 {
     if (!nn_clf_on_gpu)
     {
-        nn_clf.transfer_trainable_parameters();
+        nn_clf.transfer_trainable_parameters_to_gpu();
         nn_clf_on_gpu = true;
         load_mean();
         load_std();
@@ -638,12 +672,17 @@ float LiTS_liver_side_estimator::estimate_liver_side(LiTS_db &db,
     load_and_preprocess_scan(p, ls);
     test_scan_batch.push_back(ls);
 
-    create_input_data(test_scan_batch, "test", 1);
+    create_input_data(test_scan_batch, "test", 10);
     unsigned test_S[4] = {w_rs, h_rs, 1, N_slices};
     if (normalize)
         normalize_data(test_data, mean, std, test_S);
-    nn_clf.propagate_forward_train(test_data, test_S);
 
+    unsigned out_len = nn_clf.get_bias_sizes()[(nn_clf.get_layers()).size() -1][0];
+    float *test_scores = new float[N_slices * out_len];
+    nn_clf.propagate_forward_test(test_data, test_S, test_scores);
+
+    delete [] test_data;
+    delete [] test_scores;
     return 0;
 
 }
