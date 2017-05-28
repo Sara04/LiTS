@@ -26,7 +26,7 @@ NN::NN(){}
 NN::NN(std::vector<std::string> layers_,
        unsigned **W_sizes_, unsigned **b_sizes_)
 {
-    unsigned int N_w = 0;
+    N_tl = 0;
     for(unsigned int i = 0; i < layers_.size(); i++)
     {
         std::string layer_name(layers_.at(i));
@@ -34,14 +34,13 @@ NN::NN(std::vector<std::string> layers_,
 
         if(!strcmp(layer_name.c_str(), "fcn") or
            !strcmp(layer_name.c_str(), "conv"))
-            N_w += 1;
+            N_tl += 1;
     }
-
-    weights = new float*[N_w];
-    W_sizes = new unsigned*[N_w];
-    biases = new float*[N_w];
-    b_sizes = new unsigned*[N_w];
-    for(unsigned int i = 0; i < N_w; i++)
+    weights = new float*[N_tl];
+    W_sizes = new unsigned*[N_tl];
+    biases = new float*[N_tl];
+    b_sizes = new unsigned*[N_tl];
+    for(unsigned int i = 0; i < N_tl; i++)
     {
         W_sizes[i] = new unsigned[4];
         b_sizes[i] = new unsigned[1];
@@ -83,7 +82,7 @@ NN::NN(std::string model_path)
         std::string line;
         std::vector<std::string> weights_str;
         std::vector<std::string> biases_str;
-        unsigned N_w = 0;
+        N_tl = 0;
         while(std::getline(config_file, line))
             if(!strcmp(line.c_str(), "fcn") or !strcmp(line.c_str(), "conv"))
             {
@@ -97,14 +96,14 @@ NN::NN(std::string model_path)
                 weights_str.push_back(w_line);
                 biases_str.push_back(b_line);
 
-                N_w += 1;
+                N_tl += 1;
             }
 
-        weights = new float*[N_w];
-        W_sizes = new unsigned*[N_w];
-        biases = new float*[N_w];
-        b_sizes = new unsigned*[N_w];
-        for(unsigned i = 0; i < N_w; i++)
+        weights = new float*[N_tl];
+        W_sizes = new unsigned*[N_tl];
+        biases = new float*[N_tl];
+        b_sizes = new unsigned*[N_tl];
+        for(unsigned i = 0; i < N_tl; i++)
         {
             W_sizes[i] = new unsigned[4];
             b_sizes[i] = new unsigned[1];
@@ -157,7 +156,23 @@ NN::NN(std::string model_path)
 /******************************************************************************
  * destructor: to be done
  *****************************************************************************/
-NN::~NN(){}
+NN::~NN()
+{
+    /*
+    std::cout<<"Destructor called"<<std::endl;
+    for(unsigned int i = 0; i < N_tl; i++)
+    {
+        delete [] weights[i];
+        delete [] biases[i];
+        delete [] W_sizes[i];
+        delete [] b_sizes[i];
+    }
+    delete [] weights;
+    delete [] biases;
+    delete [] W_sizes;
+    delete [] b_sizes;
+    */
+}
 
 /******************************************************************************
  * operator= : assignment operator
@@ -167,6 +182,7 @@ NN::~NN(){}
  *****************************************************************************/
 NN NN::operator=(const NN &nn)
 {
+    N_tl = nn.get_ntl();
     layers = nn.get_layers();
     weights = nn.get_weights();
     W_sizes = nn.get_weight_sizes();
@@ -182,6 +198,14 @@ NN NN::operator=(const NN &nn)
 std::vector<std::string> NN::get_layers() const
 {
     return layers;
+}
+
+/******************************************************************************
+ * get_ntl: get number of layers with trainable parameters
+ *****************************************************************************/
+unsigned NN::get_ntl() const
+{
+    return N_tl;
 }
 
 /******************************************************************************
@@ -298,8 +322,6 @@ void NN::propagate_forward_train(float *data, unsigned *data_S)
                                 &weights_d, W_sizes,
                                 &biases_d, b_sizes,
                                 pool_sizes);
-
-    delete []data;
 }
 
 /******************************************************************************
@@ -321,7 +343,6 @@ void NN::propagate_forward_test(float *data, unsigned *data_S, float *scores)
                                &biases_d, b_sizes,
                                pool_sizes,
                                scores);
-    delete []data;
 }
 
 /******************************************************************************
@@ -361,7 +382,6 @@ float NN::compute_error(float *data_gt, unsigned *data_S)
 float NN::propagate_backwards_train(float *data_gt, unsigned *data_S,
                                     float learning_rate)
 {
-
     float train_error;
     train_error = propagate_backwards_gpu_train(data_gt, data_S,
                                                 &neuron_inputs_d,
@@ -375,7 +395,6 @@ float NN::propagate_backwards_train(float *data_gt, unsigned *data_S,
                                                 b_sizes,
                                                 pool_sizes,
                                                 learning_rate);
-    delete [] data_gt;
     return train_error;
 }
 

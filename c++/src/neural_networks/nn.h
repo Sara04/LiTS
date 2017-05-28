@@ -103,6 +103,8 @@ private:
     float *neuron_inputs_d;
     float *neuron_outputs_d;
 
+    unsigned N_tl;
+
 public:
 
     NN();
@@ -114,6 +116,7 @@ public:
     NN operator=(const NN &nn);
 
     std::vector<std::string> get_layers()const;
+    unsigned get_ntl()const;
     float ** get_weights()const;
     unsigned ** get_weight_sizes()const;
     float ** get_biases()const;
