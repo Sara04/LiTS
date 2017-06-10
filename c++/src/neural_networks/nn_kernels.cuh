@@ -9,24 +9,7 @@
 #define NN_KERNELS_CUH_
 
 #define BLOCK_SIZE 16
-
-__device__
-float neuron_activation(float neuron_input)
-{
-    if(neuron_input > 0)
-        return neuron_input;
-    else
-        return 0;
-}
-
-__device__
-float neuron_activation_derivative(float neuron_input)
-{
-    if(neuron_input > 0)
-        return 1;
-    else
-        return 0;
-}
+#include "activation_functions.cuh"
 
 __global__
 void cost_function_backprop(float *data_gt,
