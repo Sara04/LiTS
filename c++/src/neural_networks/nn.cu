@@ -535,6 +535,7 @@ float propagate_backwards_gpu_train(float *data_gt, unsigned *data_S,
     /**************************************************************************
      * 3.
      *************************************************************************/
+
     float *delta_x_d;
     cudaMalloc((void **)&delta_x_d, biases_N * data_S[3] * sizeof(float));
 
@@ -570,11 +571,14 @@ float propagate_backwards_gpu_train(float *data_gt, unsigned *data_S,
                  train_neuron_inputs_d[0], inputs_N,
                  data_S[3], W_sizes[i][0], W_sizes[i][1]);
     }
+
     /**************************************************************************
      * 4. Compute error
      *************************************************************************/
+
     float *avg_error = new float[1];
     avg_error[0] = 0;
+
     float *avg_error_d;
     cudaMalloc((void **)&avg_error_d, sizeof(float));
     cudaMemcpy(avg_error_d, avg_error, sizeof(float), cudaMemcpyHostToDevice);
@@ -584,9 +588,11 @@ float propagate_backwards_gpu_train(float *data_gt, unsigned *data_S,
              train_neuron_outputs_d[0], outputs_N,
              avg_error_d);
     cudaMemcpy(avg_error, avg_error_d, sizeof(float), cudaMemcpyDeviceToHost);
+
     /**************************************************************************
      * 5. Update weights and biases
      *************************************************************************/
+
     weights_N = 0;
     biases_N = 0;
     outputs_N = 0;
@@ -618,8 +624,11 @@ float propagate_backwards_gpu_train(float *data_gt, unsigned *data_S,
             delta_N += W_sizes[i][1] * data_S[3];
         }
     }
+
     cudaFree(data_gt_d);
+    cudaFree(avg_error_d);
     cudaFree(delta_x_d);
+
     cudaFree(train_neuron_inputs_d[0]);
     cudaFree(train_neuron_outputs_d[0]);
     cudaFree(train_neuron_inputs_d);
