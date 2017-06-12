@@ -287,3 +287,12 @@ unsigned * LiTS_processor::get_axes_order()
 {
     return ord;
 }
+
+void LiTS_processor::set_low_threshold(float lt)
+{
+	lower_th = lt;
+}
+void LiTS_processor::set_high_threshold(float ht)
+{
+	upper_th = ht;
+}

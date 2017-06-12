@@ -102,6 +102,9 @@ public:
     short* get_axes_orient();
     unsigned* get_axes_order();
 
+    void set_low_threshold(float lt=-300.0);
+    void set_high_threshold(float ht=700.0);
+
 };
 
 #endif /* LITS_PRE_AND_POST_PROCESSOR_H_ */
