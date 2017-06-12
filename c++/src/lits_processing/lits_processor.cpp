@@ -288,10 +288,23 @@ unsigned * LiTS_processor::get_axes_order()
     return ord;
 }
 
+/******************************************************************************
+ * set_low_threshold: set value of lower voxel value threshold
+ *
+ * Arguments:
+ * 		lt: lower threshold value
+******************************************************************************/
 void LiTS_processor::set_low_threshold(float lt)
 {
 	lower_th = lt;
 }
+
+/******************************************************************************
+ * set_high_threshold: set value of higher voxel value threshold
+ *
+ * Arguments:
+ * 		ht: higher threshold value
+******************************************************************************/
 void LiTS_processor::set_high_threshold(float ht)
 {
 	upper_th = ht;

@@ -50,11 +50,16 @@ typedef itk::OrientImageFilter<SegmentType, SegmentType> OrientSegmentType;
  *
  * 		normalize_volume: normalize voxel intensities
  *
+ * 		filter_with_median: image noise removal with median filter
+ *
  * 		reorient_volume: re-order and/or flip volume axes
  * 		reorient_segment: re-order and/or flip segmentation axes
  *
  * 		get_axes_orient: get the orientation of the axes
  * 		get_axes_order: get the order of the axes
+ *
+ * 		set_low_threshold: set value of the lower threshold
+ * 		set_high_threshold: set value of the higher threshold
  *
 *******************************************************************************/
 
