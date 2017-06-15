@@ -28,13 +28,16 @@ unsigned short n_dev_valid_eval[3] = {5, 4, 10};
  * LiTS_db constructor: assigning database path
  *
  * Arguments:
- * 		db_path_: path to the directory containing folders
+ * 		in_db_path_: path to the directory containing database
+ * 		out_db_path: path to the directory for storing intermediate and final
+ * 			results
  * 		"Training Batch 1" and "Training Batch 2"
  *
  *****************************************************************************/
-LiTS_db::LiTS_db(std::string db_path_)
+LiTS_db::LiTS_db(std::string in_db_path_, std::string out_db_path_)
 {
-    db_path = db_path_;
+    in_db_path = in_db_path_;
+    out_db_path = out_db_path_;
     n_train = 0;
     n_dev = 0;
     n_valid = 0;
@@ -57,7 +60,7 @@ void LiTS_db::load_train_subjects_names()
     for (unsigned int i = 0; i < 2; i++)
     {
         for (fs::directory_iterator dir_iter(
-                db_path + "/" + train_db_batches[i]); dir_iter != end_iter;
+                in_db_path + "/" + train_db_batches[i]); dir_iter != end_iter;
                 ++dir_iter)
         {
             if (!strncmp(basename(dir_iter->path()).c_str(), "volume", 6))
@@ -99,7 +102,7 @@ void LiTS_db::load_test_subjects_names()
     std::string subject_name;
     std::vector<std::string>::iterator it;
 
-    for (fs::directory_iterator dir_iter(db_path + "/" + test_batch);
+    for (fs::directory_iterator dir_iter(in_db_path + "/" + test_batch);
             dir_iter != end_iter; ++dir_iter)
     {
         subject_name = basename(dir_iter->path()).substr(12);
@@ -323,9 +326,10 @@ void LiTS_db::get_train_paths(const std::string subj_name,
     else
         db_batch = "/Training Batch 2";
 
-    volume_path = db_path + db_batch + "/volume-" + subj_name + ".nii";
+    volume_path = in_db_path + db_batch + "/volume-" + subj_name + ".nii";
 
-    segment_path = db_path + db_batch + "/segmentation-" + subj_name + ".nii";
+    segment_path = in_db_path + db_batch + "/segmentation-" + subj_name +
+    		".nii";
 }
 
 /******************************************************************************
@@ -346,7 +350,7 @@ void LiTS_db::get_train_volume_path(const std::string subj_name,
     else
         db_batch = "/Training Batch 2";
 
-    volume_path = db_path + db_batch + "/volume-" + subj_name + ".nii";
+    volume_path = in_db_path + db_batch + "/volume-" + subj_name + ".nii";
 }
 
 /******************************************************************************
@@ -367,7 +371,8 @@ void LiTS_db::get_train_segment_path(const std::string subj_name,
     else
         db_batch = "/Training Batch 2";
 
-    segment_path = db_path + db_batch + "/segmentation-" + subj_name + ".nii";
+    segment_path = in_db_path + db_batch + "/segmentation-" + subj_name +
+    		".nii";
 }
 
 /******************************************************************************
@@ -382,7 +387,7 @@ void LiTS_db::get_train_segment_path(const std::string subj_name,
 void LiTS_db::get_train_meta_segment_path(const std::string subj_name,
                                           std::string &meta_segment_path)
 {
-    meta_segment_path = db_path + "Training Meta Segmentations" +
+    meta_segment_path = out_db_path + "Training Meta Segmentations" +
                         "/meta-segmentation-" + subj_name + ".nii";
 }
 
@@ -397,7 +402,7 @@ void LiTS_db::get_train_meta_segment_path(const std::string subj_name,
 void LiTS_db::get_train_liver_side_gt_path(const std::string subj_name,
                                            std::string &liver_side_gt_path)
 {
-    liver_side_gt_path = db_path + "Training Meta Segmentations" +
+    liver_side_gt_path = out_db_path + "Training Meta Segmentations" +
                         "/liver_side_gt-" + subj_name + ".txt";
 }
 
@@ -412,7 +417,8 @@ void LiTS_db::get_train_liver_side_gt_path(const std::string subj_name,
 void LiTS_db::get_test_volume_path(const std::string subj_name,
                                    std::string &volume_path)
 {
-    volume_path = db_path + test_batch + "/test-volume-" + subj_name + ".nii";
+    volume_path = in_db_path + test_batch + "/test-volume-" + subj_name +
+    		".nii";
 }
 
 /******************************************************************************
@@ -427,6 +433,7 @@ void LiTS_db::get_test_segment_path(const std::string subj_name,
                                     std::string &segment_path)
 {
     std::string db_batch = "/Testing Results";
-    segment_path =  db_path + db_batch + "/test-segment-" + subj_name + ".nii";
+    segment_path =  out_db_path + db_batch + "/test-segment-" + subj_name +
+    		".nii";
 }
 

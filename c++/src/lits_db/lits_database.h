@@ -96,7 +96,8 @@ class LiTS_db
 
 private:
 
-    std::string db_path;
+    std::string in_db_path;
+    std::string out_db_path;
     std::vector<std::string> train_subjects;
     std::vector<std::string> develop_subjects;
     std::vector<std::string> valid_subjects;
@@ -111,7 +112,7 @@ private:
 
 public:
 
-    LiTS_db(std::string db_path_);
+    LiTS_db(std::string in_db_path_, std::string out_db_path_);
 
     void load_train_subjects_names();
     void load_test_subjects_names();
