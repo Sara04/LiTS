@@ -3,6 +3,8 @@
 #include "liver_common_methods.cuh"
 
 #include <iostream>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 #define MAX_THREADS 1024
 
@@ -158,27 +160,28 @@ void determine_objects_bounds(unsigned *accs, unsigned *S, unsigned *B,
  * 		N_s: number of scans
  * 		B: array where lung bounds would be stored
  *****************************************************************************/
-void organ_mask_accumulation(unsigned char **masks_m, unsigned *S,
-		                     unsigned *Ls, unsigned N_s, unsigned int *accs)
+unsigned int * organ_mask_accumulation(unsigned char **masks, unsigned *S,
+		                               unsigned *Ls, unsigned N_s,
+		                               unsigned char ov)
 {
-    unsigned char *masks_m_d;
+    unsigned char *masks_d;
     unsigned int *S_d;
     unsigned int *Ls_d;
     unsigned int *accs_d;
 
     // 1.1 Allocate and transfer meta segmentations to gpu
-    cudaMalloc((void **)&masks_m_d, Ls[N_s] * sizeof(unsigned char));
+    cudaMalloc((void **)&masks_d, Ls[N_s] * sizeof(unsigned char));
     unsigned int s = 0;
     for(unsigned int i = 0; i < N_s; i++)
     {
-        cudaMemcpy(&masks_m_d[Ls[i]], masks_m[i],
+        cudaMemcpy(&masks_d[Ls[i]], masks[i],
         		   (Ls[i+1] - Ls[i]) * sizeof(unsigned char),
                    cudaMemcpyHostToDevice);
         s += (S[3 * i] + S[3 * i + 1] + S[3 * i + 2]);
     }
 
     // 1.2 Allocate and transfer binary objects' accumulator
-    accs = new unsigned int[s];
+    unsigned int *accs = new unsigned int[s];
     for(unsigned int i = 0; i < s; i++)
         accs[i] = 0;
     cudaMalloc((void **)&accs_d, s * sizeof(unsigned));
@@ -194,9 +197,9 @@ void organ_mask_accumulation(unsigned char **masks_m, unsigned *S,
     unsigned int grid_x = 512;
     unsigned int grid_y = Ls[N_s] / (grid_x * MAX_THREADS) + 1;
     dim3 grid(grid_x, grid_y);
-    get_organ_mask_accs_gpu_multiple<<<grid, MAX_THREADS>>>(masks_m_d,
+    get_organ_mask_accs_gpu_multiple<<<grid, MAX_THREADS>>>(masks_d,
                                                             Ls_d, S_d,
-                                                            3, accs_d, N_s);
+                                                            ov, accs_d, N_s);
 
     // 1.5 Transfer accumulation back to cpu and determine lung bounds
     cudaMemcpy(accs, accs_d, s * sizeof(unsigned), cudaMemcpyDeviceToHost);
@@ -204,7 +207,9 @@ void organ_mask_accumulation(unsigned char **masks_m, unsigned *S,
     cudaFree(Ls_d);
     cudaFree(S_d);
     cudaFree(accs_d);
-    cudaFree(masks_m_d);
+    cudaFree(masks_d);
+
+    return accs;
 }
 
 /******************************************************************************
@@ -221,7 +226,7 @@ void extract_lung_bounds(unsigned char **masks_m, unsigned *S, unsigned *Ls,
                          unsigned N_s, unsigned *B)
 {
 	unsigned int *accs;
-	organ_mask_accumulation(masks_m, S, Ls, N_s, accs);
+	accs = organ_mask_accumulation(masks_m, S, Ls, N_s, 3);
     determine_objects_bounds(accs, S, B, N_s);
     delete [] accs;
 }
@@ -243,9 +248,9 @@ void extract_liver_side_ground_truth(unsigned char **masks_gt,
 {
 
     unsigned int *accs;
-    organ_mask_accumulation(masks_gt, S, Ls, N_s, accs);
+    accs = organ_mask_accumulation(masks_gt, S, Ls, N_s, 1);
 
-    s = 0;
+    unsigned int s = 0;
     for(unsigned int i = 0; i < N_s; i++)
     {
         unsigned h = (B[6 * i + 1] + B[6 * i]) / 2;
@@ -293,7 +298,7 @@ void extract_volume_slices(float **Vs, float *sls_rs,
                            unsigned N_sl, unsigned N_pix,
                            unsigned w_rs, unsigned h_rs,
                            unsigned *ts_T, unsigned *ts_B,
-                           float *random_rotate, unsigned *bbox_shift,
+                           float *random_rotate, int *random_shift,
                            bool mirror)
 {
     float *sls_d;
@@ -316,6 +321,7 @@ void extract_volume_slices(float **Vs, float *sls_rs,
 
     unsigned int inc = 0;
     Ls_bx[0] = 0;
+
     for(unsigned int s = 0; s < N_s; s ++)
         for(unsigned int i = ts_B[s]; i <= ts_T[s]; i++)
         {
@@ -325,8 +331,8 @@ void extract_volume_slices(float **Vs, float *sls_rs,
             Ls_bx[inc + 1] = Ls_bx[inc] + S[3 * s] * S[3 * s + 1];
             for(unsigned int a = 0; a < N_aug; a++)
                 for(unsigned int j = 0; j < 4; j++)
-                    sls_bx[4 * inc * N_aug + a * 4 + j] =
-                    		B[6 * s + j] + bbox_shift[4 * s + j];
+                    sls_bx[4 * inc * N_aug + a * 4 + j] = B[6 * s + j] +\
+                    	random_shift[4 * inc * N_aug + a * 4 + j];
             inc += 1;
         }
 
@@ -384,7 +390,7 @@ void extract_gt_slices(unsigned char **masks_gt, unsigned char *sls_gt_rs,
                        unsigned N_sl, unsigned N_pix,
                        unsigned w_rs, unsigned h_rs,
                        unsigned *ts_T, unsigned *ts_B,
-                       float *random_rotate, unsigned *bbox_shift,
+                       float *random_rotate, unsigned *random_shift,
                        bool mirror)
 {
     unsigned char *sls_gt_d;
@@ -420,8 +426,8 @@ void extract_gt_slices(unsigned char **masks_gt, unsigned char *sls_gt_rs,
             Ls_bx[inc + 1] = Ls_bx[inc] + S[3 * s] * S[3 * s + 1];
             for(unsigned int a = 0; a < N_aug; a++)
                 for(unsigned int j = 0; j < 4; j++)
-                    sls_bx[4 * inc * N_aug + a * 4 + j] =\
-                    	B[6 * s + j] + bbox_shift[4 * s + j];
+                    sls_bx[4 * inc * N_aug + a * 4 + j] = B[6 * s + j] +\
+                    	random_shift[4 * inc * N_aug + a * 4 + j];
             inc += 1;
         }
 

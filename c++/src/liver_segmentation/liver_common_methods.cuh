@@ -60,8 +60,8 @@ void determine_objects_bounds(unsigned *accs, unsigned *S, unsigned *B,
  * 		N_s: number of scans
  * 		B: array where lung bounds would be stored
  *****************************************************************************/
-void organ_mask_accumulation(unsigned char **masks_m, unsigned *S,
-		                     unsigned *Ls, unsigned N_s, unsigned int *accs);
+unsigned int * organ_mask_accumulation(unsigned char **masks_m, unsigned *S,
+		                               unsigned *Ls, unsigned N_s);
 /******************************************************************************
  * extract_lung_bounds: extraction of lungs' bounds
  *
@@ -113,7 +113,7 @@ void extract_volume_slices(float **Vs, float *sls_rs,
                            unsigned N_sl, unsigned N_pix,
                            unsigned w_rs, unsigned h_rs,
                            unsigned *ts_T, unsigned *ts_B,
-                           float *random_rotate, unsigned *bbox_shift,
+                           float *random_rotate, int *bbox_shift,
                            bool mirror);
 /******************************************************************************
  * extract_gt_slices: extraction of ground truth slices
@@ -140,6 +140,6 @@ void extract_gt_slices(unsigned char **masks_gt, unsigned char *sls_gt_rs,
                        unsigned N_sl, unsigned N_pix,
                        unsigned w_rs, unsigned h_rs,
                        unsigned *ts_T, unsigned *ts_B,
-                       float *random_rotate, unsigned *bbox_shift,
+                       float *random_rotate, int *bbox_shift,
                        bool mirror);
 #endif /* LIVER_COMMON_METHODS_CUH_ */
