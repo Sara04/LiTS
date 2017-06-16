@@ -12,6 +12,7 @@
 #include "../lits_scan/lits_scan.h"
 #include "../lits_processing/lits_processor.h"
 #include "../neural_networks/nn.h"
+#include <math.h>
 #include <boost/progress.hpp>
 #include <iostream>
 
@@ -111,49 +112,45 @@ public:
     LiTS_liver_side_estimator();
     LiTS_liver_side_estimator(std::string model_path_,
                               unsigned w_rs_=64, unsigned h_rs_=48,
-                              float ext_d_=25.0, float ext_u_=5.0);
+                              float ext_d_=20.0, float ext_u_=1.0);
     ~LiTS_liver_side_estimator();
 
-    void compute_mean(LiTS_db &db, LiTS_processor &p);
-    void compute_std(LiTS_db &db, LiTS_processor &p);
+    void compute_mean(LiTS_db &db, LiTS_processor &p, unsigned N_aug=5);
+    void compute_std(LiTS_db &db, LiTS_processor &p, unsigned N_aug=5);
 
     void save_mean();
     void save_std();
-    void save_model();
+    void save_model(unsigned int it);
 
     void load_mean();
     void load_std();
-    void load_model();
+    void load_model(unsigned int it);
 
     void load_and_preprocess_scan(LiTS_processor &p, LiTS_scan &ls);
+    void load_and_reorient_masks(LiTS_processor &p, LiTS_scan &ls);
 
     void get_volume_and_voxel_sizes(LiTS_scan &ls, unsigned *S, float *vox_S);
 
     void create_input_data(std::vector<LiTS_scan> scans, std::string mode,
                            unsigned N_augment);
 
-    float develop_liver_side_estimator(LiTS_db &db,
-                                       LiTS_processor &p,
+    float develop_liver_side_estimator(LiTS_db &db, LiTS_processor &p,
                                        unsigned N_subj_batch,
                                        unsigned N_augment,
                                        float learning_rate,
                                        bool normalize=false);
 
-    float valid_liver_side_estimator(LiTS_db &db,
-                                     LiTS_processor &p,
+    float valid_liver_side_estimator(LiTS_db &db, LiTS_processor &p,
                                      unsigned N_subj_batch,
                                      bool normalize=false);
 
-    float eval_liver_side_estimator(LiTS_db &db,
-                                    LiTS_processor &p,
+    float eval_liver_side_estimator(LiTS_db &db, LiTS_processor &p,
                                     std::string scan_name,
                                     bool normalize=false);
 
-    float estimate_liver_side(LiTS_db &db,
-                              LiTS_processor &p,
+    float estimate_liver_side(LiTS_db &db, LiTS_processor &p,
                               std::string scan_name,
                               bool normalize=false);
-
 };
 
 #endif /* LIVER_SIDE_ESTIMATOR_H_ */

@@ -6,7 +6,7 @@
  */
 
 #include "liver_side_estimator.h"
-#include "liver_side_estimator.cuh"
+#include "liver_common_methods.cuh"
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -129,6 +129,7 @@ void LiTS_liver_side_estimator::load_and_preprocess_scan(LiTS_processor &p,
     ls.load_info();
 
     p.preprocess_volume(&ls);
+    p.filter_with_median(&ls, 5);
     p.reorient_segment((ls.get_segment())->GetBufferPointer(),
                        ls.get_width(), ls.get_height(), ls.get_depth(),
                        ls.get_axes_order(), ls.get_axes_orient(),
@@ -137,6 +138,35 @@ void LiTS_liver_side_estimator::load_and_preprocess_scan(LiTS_processor &p,
                        ls.get_width(), ls.get_height(), ls.get_depth(),
                        ls.get_axes_order(), ls.get_axes_orient(),
                        p.get_axes_order(), p.get_axes_orient());
+}
+
+/******************************************************************************
+ * load_and_reorient_masks: method that loads volume, segmentation and
+ * meta segmentation and re-orient segmentation and meta segmentation, while
+ * the volume is loaded just for loading info about volume's and voxel's sizes
+ * re-orientation of masks is done in order to load data in its original form
+ *
+ * Arguments:
+ *      p: processor
+ *      ls: scan containing volume, segmentation and meta segmentation
+ *****************************************************************************/
+void LiTS_liver_side_estimator::load_and_reorient_masks(LiTS_processor &p,
+                                                        LiTS_scan &ls)
+{
+    ls.load_segment();
+    ls.load_meta_segment();
+	ls.load_volume();
+    ls.load_info();
+
+    p.reorient_segment((ls.get_segment())->GetBufferPointer(),
+                       ls.get_width(), ls.get_height(), ls.get_depth(),
+                       ls.get_axes_order(), ls.get_axes_orient(),
+                       p.get_axes_order(), p.get_axes_orient());
+    p.reorient_segment((ls.get_meta_segment())->GetBufferPointer(),
+                       ls.get_width(), ls.get_height(), ls.get_depth(),
+                       ls.get_axes_order(), ls.get_axes_orient(),
+                       p.get_axes_order(), p.get_axes_orient());
+
 }
 
 /******************************************************************************
@@ -170,12 +200,14 @@ void LiTS_liver_side_estimator::get_volume_and_voxel_sizes(LiTS_scan &ls,
  *         segmentation
  *
  *****************************************************************************/
-void LiTS_liver_side_estimator::compute_mean(LiTS_db &db, LiTS_processor &p)
+void LiTS_liver_side_estimator::compute_mean(LiTS_db &db, LiTS_processor &p,
+		                                     unsigned int N_aug)
 {
     for(unsigned int i = 0; i < (w_rs * h_rs); i++)
         mean[i] = 0.0;
     unsigned count_slices = 0;
     std::vector<LiTS_scan> develop_scans_batch;
+
     for(unsigned int i = 0; i < db.get_number_of_development(); i++)
     {
         std::string scan_name = db.get_develop_subject_name(i);
@@ -185,19 +217,20 @@ void LiTS_liver_side_estimator::compute_mean(LiTS_db &db, LiTS_processor &p)
         LiTS_scan ls(volume_path, segment_path, meta_segment_path);
         load_and_preprocess_scan(p, ls);
         develop_scans_batch.push_back(ls);
-        if(i and (i % 10 == 0 or i == (db.get_number_of_development() - 1)))
+        if(i and
+           ((i + 1) % 10 == 0 or i == (db.get_number_of_development() - 1)))
         {
             std::cout<<"Iteration: "<<i<<"/"<<db.get_number_of_development();
             std::cout<<"\r"<<std::flush;
-            create_input_data(develop_scans_batch, "develop", 1);
+            create_input_data(develop_scans_batch, "develop", N_aug);
             unsigned S[3] = {w_rs, h_rs, N_slices};
             accumulate_for_mean_gpu(develop_data, mean, S);
             count_slices += N_slices;
             delete [] develop_data;
             delete [] develop_gt;
             N_slices = 0;
+            develop_scans_batch.clear();
         }
-        develop_scans_batch.clear();
     }
     for(unsigned int i = 0; i < (w_rs * h_rs); i++)
         mean[i] = mean[i] / count_slices;
@@ -213,12 +246,13 @@ void LiTS_liver_side_estimator::compute_mean(LiTS_db &db, LiTS_processor &p)
  *         segmentation
  *
  *****************************************************************************/
-void LiTS_liver_side_estimator::compute_std(LiTS_db &db, LiTS_processor &p)
+void LiTS_liver_side_estimator::compute_std(LiTS_db &db, LiTS_processor &p,
+		                                    unsigned N_aug)
 {
     for(unsigned int i = 0; i < (w_rs * h_rs); i++)
         std[i] = 0.0;
     unsigned count_slices = 0;
-    std::vector<LiTS_scan> train_scans_batch;
+    std::vector<LiTS_scan> develop_scans_batch;
     for(unsigned int i = 0; i < db.get_number_of_development(); i++)
     {
         std::string scan_name = db.get_develop_subject_name(i);
@@ -228,22 +262,22 @@ void LiTS_liver_side_estimator::compute_std(LiTS_db &db, LiTS_processor &p)
 
         LiTS_scan ls(volume_path, segment_path, meta_segment_path);
         load_and_preprocess_scan(p, ls);
-        train_scans_batch.push_back(ls);
-        if(i and (i % 10 == 0 or i == (db.get_number_of_development() - 1)))
+        develop_scans_batch.push_back(ls);
+        if(i and
+           ((i + 1) % 10 == 0 or i == (db.get_number_of_development() - 1)))
         {
             std::cout<<"Iteration: "<<i<<"/"<<db.get_number_of_development();
             std::cout<<"\r"<<std::flush;
-            create_input_data(train_scans_batch, "develop", 1);
+            create_input_data(develop_scans_batch, "develop", N_aug);
             unsigned S[3] = {w_rs, h_rs, N_slices};
             accumulate_for_std_gpu(develop_data, std, mean, S);
             count_slices += N_slices;
             delete [] develop_data;
             delete [] develop_gt;
             N_slices = 0;
+            develop_scans_batch.clear();
         }
-        train_scans_batch.clear();
     }
-
     for(unsigned int i = 0; i < (w_rs * h_rs); i++)
         std[i] = sqrt(std[i] / count_slices);
 }
@@ -273,11 +307,17 @@ void LiTS_liver_side_estimator::save_std()
 /******************************************************************************
  * save_model: saving the trained neural network model
  *****************************************************************************/
-void LiTS_liver_side_estimator::save_model()
+void LiTS_liver_side_estimator::save_model(unsigned int it)
 {
 
     nn_clf.transfer_trainable_parameters_to_cpu();
-    nn_clf.save_model(model_path);
+
+    std::string model_folder_it =\
+    		model_path + "model_" + std::to_string(it) + "/";
+
+    if(!fs::exists(model_folder_it))
+        fs::create_directory(model_folder_it);
+    nn_clf.save_model(model_folder_it);
 }
 
 /******************************************************************************
@@ -309,11 +349,11 @@ void LiTS_liver_side_estimator::load_std()
  * Arguments:
  *      ts: vector of LiTS_scan objects
  *      mode: train/valid/test
- *      N_augment: data augmentation used only in training mode
+ *      N_aug: data augmentation used only in training mode
  *****************************************************************************/
 void LiTS_liver_side_estimator::create_input_data(std::vector<LiTS_scan> ts,
                                                   std::string mode,
-                                                  unsigned N_augment)
+                                                  unsigned N_aug)
 {
     // _____________________________________________________________________ //
     // 1. Allocating memory for the input data
@@ -380,68 +420,91 @@ void LiTS_liver_side_estimator::create_input_data(std::vector<LiTS_scan> ts,
     if(!strcmp(mode.c_str(), "develop") or !strcmp(mode.c_str(), "valid") or
        !strcmp(mode.c_str(), "eval"))
         extract_liver_side_ground_truth(masks_gt, S, Ls, N_s, B, gt);
-
     // _____________________________________________________________________ //
     // 4. Training slices extraction
     // Training slices extraction based on the estimated lungs bottom bound
     // and given upper and lower extensions (it is assumed that slice distance
     // is correct, what is not the case for all scans)
     // _____________________________________________________________________ //
+
+    float *random_rotate = new float[4 * N_sl * N_aug];
+    int *random_shift = new int[4 * N_sl * N_aug];
+    for(unsigned int i = 0; i < 4 * N_sl * N_aug; i++)
+    	random_shift[i] = std::rand() % 10 - 5;
+
+    for(unsigned int i = 0; i < (N_sl * N_aug); i++)
+    {
+    	float cos_ = 1.0;
+    	if(N_aug >= 1)
+    		cos_-= float(std::rand() % 50) / 1000;
+
+    	float sin_ = sqrt(1 - pow(cos_, 2));
+    	short sgn = std::rand() % 2 - 1;
+    	random_rotate[4 * i] = cos_;
+    	random_rotate[4 * i + 1] = sgn * sin_;
+    	random_rotate[4 * i + 2] = (-1) * sgn * sin_;
+    	random_rotate[4 * i + 3] = cos_;
+    }
+
     if(!strcmp(mode.c_str(), "develop"))
     {
-        develop_data = new float[2 * N_sl * N_augment * w_rs * h_rs];
-        extract_slices(Vs, develop_data, B, S, N_s, N_augment, N_sl, N_pix,
-                       w_rs, h_rs, ts_T, ts_B, 10);
-        develop_gt = new float[2 * N_sl * N_augment];
+        develop_data = new float[2 * N_sl * N_aug * w_rs * h_rs];
+        extract_volume_slices(Vs, develop_data, B, S, N_s, N_aug, N_sl, N_pix,
+                              w_rs, h_rs, ts_T, ts_B,
+                              random_rotate, random_shift, 1);
+        develop_gt = new float[2 * N_sl * N_aug];
         unsigned idx = 0;
         for(unsigned int s = 0; s < N_s; s++)
-            for(unsigned int a = 0; a < N_augment; a++)
+            for(unsigned int a = 0; a < N_aug; a++)
                 for(unsigned i = 0; i < (ts_T[s] + 1 - ts_B[s]); i++)
                 {
                     develop_gt[idx] = gt[s];
-                    develop_gt[N_sl * N_augment + idx] = 1 - gt[s];
+                    develop_gt[N_sl * N_aug + idx] = 1 - gt[s];
                     idx += 1;
                 }
     }
     else if(!strcmp(mode.c_str(), "valid"))
     {
-        validate_data = new float[2 * N_sl * N_augment * w_rs * h_rs];
-        extract_slices(Vs, validate_data, B, S, N_s, N_augment, N_sl, N_pix,
-                       w_rs, h_rs, ts_T, ts_B, 10);
-        validate_gt = new float[2 * N_sl * N_augment];
+        validate_data = new float[2 * N_sl * N_aug * w_rs * h_rs];
+        extract_volume_slices(Vs, validate_data, B, S, N_s, N_aug, N_sl, N_pix,
+                              w_rs, h_rs, ts_T, ts_B,
+                              random_rotate, random_shift, 1);
+        validate_gt = new float[2 * N_sl * N_aug];
         unsigned idx = 0;
         for(unsigned int s = 0; s < N_s; s++)
-            for(unsigned int a = 0; a < N_augment; a++)
+            for(unsigned int a = 0; a < N_aug; a++)
                 for(unsigned i = 0; i < (ts_T[s] + 1 - ts_B[s]); i++)
                 {
                     validate_gt[idx] = gt[s];
-                    validate_gt[N_sl * N_augment + idx] = 1 - gt[s];
+                    validate_gt[N_sl * N_aug + idx] = 1 - gt[s];
                     idx += 1;
                 }
     }
     else if(!strcmp(mode.c_str(), "eval"))
     {
-        eval_data = new float[2 * N_sl * N_augment * w_rs * h_rs];
-        extract_slices(Vs, eval_data, B, S, N_s, N_augment, N_sl, N_pix,
-                       w_rs, h_rs, ts_T, ts_B, 10);
-        eval_gt = new float[2 * N_sl * N_augment];
+        eval_data = new float[2 * N_sl * N_aug * w_rs * h_rs];
+        extract_volume_slices(Vs, eval_data, B, S, N_s, N_aug, N_sl, N_pix,
+                              w_rs, h_rs, ts_T, ts_B,
+                              random_rotate, random_shift, 1);
+        eval_gt = new float[2 * N_sl * N_aug];
         unsigned idx = 0;
         for(unsigned int s = 0; s < N_s; s++)
-            for(unsigned int a = 0; a < N_augment; a++)
+            for(unsigned int a = 0; a < N_aug; a++)
                 for(unsigned i = 0; i < (ts_T[s] + 1 - ts_B[s]); i++)
                 {
                     eval_gt[idx] = gt[s];
-                    eval_gt[N_sl * N_augment + idx] = 1 - gt[s];
+                    eval_gt[N_sl * N_aug + idx] = 1 - gt[s];
                     idx += 1;
                 }
     }
     else if(!strcmp(mode.c_str(), "test"))
     {
         test_data = new float[2 * N_sl * w_rs * h_rs];
-        extract_slices(Vs, test_data, B, S, N_s, N_augment, N_sl, N_pix,
-                       w_rs, h_rs, ts_T, ts_B, 10);
+        extract_volume_slices(Vs, test_data, B, S, N_s, N_aug, N_sl, N_pix,
+                              w_rs, h_rs, ts_T, ts_B,
+                              random_rotate, random_shift, 1);
     }
-    N_slices = 2 * N_sl * N_augment;
+    N_slices = 2 * N_sl * N_aug;
     // 6. Memory release
     delete [] ts_T;
     delete [] ts_B;
@@ -463,7 +526,7 @@ void LiTS_liver_side_estimator::create_input_data(std::vector<LiTS_scan> ts,
  *      db: LiTS_db database
  *      p: initialized pre-processor
  *      N_subj_batch: number of subjects per training batch
- *      N_augment: factor of data augmentation
+ *      N_aug: factor of data augmentation
  *      learning_rate: learning rate used in backpropagation algorithm
  *      normalize: flag indication whether to perform mean-std normalization
  *      of the data
@@ -471,7 +534,7 @@ void LiTS_liver_side_estimator::create_input_data(std::vector<LiTS_scan> ts,
 float LiTS_liver_side_estimator::
     develop_liver_side_estimator(LiTS_db &db, LiTS_processor &p,
                                  unsigned N_subj_batch,
-                                 unsigned N_augment,
+                                 unsigned N_aug,
                                  float learning_rate,
                                  bool normalize)
 {
@@ -485,6 +548,9 @@ float LiTS_liver_side_estimator::
             std::cout<<"Mean value computation.."<<std::endl;
             compute_mean(db, p);
             save_mean();
+
+            for(unsigned int i = 0; i < 10; i++)
+            	std::cout<<"mean[i]:"<<i<<" "<<mean[i]<<std::endl;
         }
         else
             load_mean();
@@ -508,17 +574,36 @@ float LiTS_liver_side_estimator::
         db.get_train_paths(scan_name, volume_path, segment_path);
         db.get_train_meta_segment_path(scan_name, meta_segment_path);
         LiTS_scan ls(volume_path, segment_path, meta_segment_path);
+        p.set_low_threshold(float(-100 + rand() % 20 - 10));
+        p.set_high_threshold(float(400 + rand() % 50 - 25));
         load_and_preprocess_scan(p, ls);
         develop_scans_batch.push_back(ls);
     }
-    create_input_data(develop_scans_batch, "develop", N_augment);
+
+    create_input_data(develop_scans_batch, "develop", N_aug);
     unsigned dev_S[4] = {w_rs, h_rs, 1, N_slices};
     if (normalize)
         normalize_data(develop_data, mean, std, dev_S);
-    nn_clf.propagate_forward_train(develop_data, dev_S);
+    nn_clf.propagate_forward_train(develop_data, dev_S, 1);
 
+    /*
+    float *img_tmp = new float[w_rs * h_rs];
+    for(unsigned int i = 0; i < N_slices; i++)
+    {
+    	std::cout<<"i, N_slices: "<<i<<" "<<N_slices<<std::endl;
+    	std::cout<<"label: "<<develop_gt[i]<<std::endl;
+    	for(unsigned int j = 0; j < w_rs * h_rs; j++)
+    		img_tmp[j] = develop_data[i * w_rs * h_rs + j] + 0.5;
+
+        cv::Mat segment = cv::Mat(h_rs, w_rs, CV_32F, img_tmp);
+
+        cv::namedWindow( "Display window");
+        cv::imshow( "Display window", segment );
+        cv::waitKey(0);
+    }
+	*/
     float train_p = nn_clf.propagate_backwards_train(develop_gt, dev_S,
-                                                     learning_rate);
+                                                     learning_rate, 1);
     delete [] develop_data;
     delete [] develop_gt;
 
@@ -560,11 +645,11 @@ float LiTS_liver_side_estimator::
         load_and_preprocess_scan(p, ls);
         valid_scans_batch.push_back(ls);
     }
-    create_input_data(valid_scans_batch, "valid", 1);
+    create_input_data(valid_scans_batch, "valid", 10);
     unsigned valid_S[4] = {w_rs, h_rs, 1, N_slices};
     if (normalize)
         normalize_data(validate_data, mean, std, valid_S);
-    nn_clf.propagate_forward_train(validate_data, valid_S);
+    nn_clf.propagate_forward_train(validate_data, valid_S, 1);
 
     float valid_p = nn_clf.compute_error(validate_gt, valid_S);
 
@@ -614,9 +699,10 @@ float LiTS_liver_side_estimator::
     if (normalize)
         normalize_data(eval_data, mean, std, eval_S);
 
-    unsigned out_len = nn_clf.get_bias_sizes()[(nn_clf.get_layers()).size() -1][0];
+    unsigned out_len =\
+    		nn_clf.get_bias_sizes()[(nn_clf.get_layers()).size() -1][0];
     float *eval_scores = new float[N_slices * out_len];
-    nn_clf.propagate_forward_test(eval_data, eval_S, eval_scores);
+    nn_clf.propagate_forward_test(eval_data, eval_S, eval_scores, 1);
 
     float side = 0;
     for(unsigned int i = 0; i < N_slices/2; i++)
@@ -675,12 +761,12 @@ float LiTS_liver_side_estimator::estimate_liver_side(LiTS_db &db,
     if (normalize)
         normalize_data(test_data, mean, std, test_S);
 
-    unsigned out_len = nn_clf.get_bias_sizes()[(nn_clf.get_layers()).size() -1][0];
+    unsigned out_len =\
+    		nn_clf.get_bias_sizes()[(nn_clf.get_layers()).size() -1][0];
     float *test_scores = new float[N_slices * out_len];
-    nn_clf.propagate_forward_test(test_data, test_S, test_scores);
+    nn_clf.propagate_forward_test(test_data, test_S, test_scores, 1);
 
     delete [] test_data;
     delete [] test_scores;
     return 0;
-
 }
