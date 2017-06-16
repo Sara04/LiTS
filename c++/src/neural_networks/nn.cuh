@@ -40,7 +40,8 @@ void propagate_forward_gpu_train(float *train_imgs, unsigned *train_s,
                                  unsigned **W_sizes,
                                  float **biases_d,
                                  unsigned **b_sizes,
-                                 unsigned **pool_sizes);
+                                 unsigned **pool_sizes,
+                                 unsigned na);
 
 void propagate_forward_gpu_test(float *test_imgs, unsigned *test_S,
                                 float **test_neuron_out_d,
@@ -48,7 +49,8 @@ void propagate_forward_gpu_test(float *test_imgs, unsigned *test_S,
                                 float **weights_d, unsigned **W_sizes,
                                 float **biases_d, unsigned **b_sizes,
                                 unsigned **pool_sizes,
-                                float *scores);
+                                float *scores,
+                                unsigned na);
 
 float compute_error_gpu(float *data_gt,
                         unsigned *data_S,
@@ -75,6 +77,7 @@ float propagate_backwards_gpu_train(float *data_gt,
                                     float **delta_biases_d,
                                     unsigned **b_sizes,
                                     unsigned **pool_sizes,
-                                    float learning_rate);
+                                    float learning_rate,
+                                    unsigned na);
 
 #endif /* NN_CUH_ */

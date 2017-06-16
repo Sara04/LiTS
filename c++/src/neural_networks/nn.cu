@@ -205,7 +205,8 @@ void propagate_forward_gpu_train(float *train_imgs, unsigned *train_S,
                                  std::vector<std::string> layers,
                                  float **weights_d, unsigned **W_sizes,
                                  float **biases_d, unsigned **b_sizes,
-                                 unsigned **pool_sizes)
+                                 unsigned **pool_sizes,
+                                 unsigned na)
 {
     /**************************************************************************
      *  1. Allocate and transfer training data to gpu
@@ -261,7 +262,7 @@ void propagate_forward_gpu_train(float *train_imgs, unsigned *train_S,
                     train_neuron_in_d[0], train_neuron_out_d[0],
                     weights_d[0], biases_d[0], train_S[3],
                     W_sizes[i][0], W_sizes[i][1],
-                    start_ni[i], start_no[i], start_w[i], start_b[i]);
+                    start_ni[i], start_no[i], start_w[i], start_b[i], na);
 
             start_ni[i + 1] = (start_ni[i] + train_S[3] * W_sizes[i][1]);
             start_no[i + 1] = (start_no[i] + train_S[3] * W_sizes[i][0]);
@@ -303,7 +304,7 @@ void propagate_forward_gpu_test(float *test_imgs, unsigned *test_S,
                                 float **weights_d, unsigned **W_sizes,
                                 float **biases_d, unsigned **b_sizes,
                                 unsigned **pool_sizes,
-                                float *scores)
+                                float *scores, unsigned na)
 {
     /**************************************************************************
      *  1. Allocate and transfer training data to gpu
@@ -353,7 +354,7 @@ void propagate_forward_gpu_test(float *test_imgs, unsigned *test_S,
                     test_neuron_out_d[0],
                     weights_d[0], biases_d[0], test_S[3],
                     W_sizes[i][0], W_sizes[i][1],
-                    start_ni[i], start_no[i], start_w[i], start_b[i]);
+                    start_ni[i], start_no[i], start_w[i], start_b[i], na);
 
             start_ni[i + 1] = (start_ni[i] + test_S[3] * W_sizes[i][1]);
             start_no[i + 1] = (start_no[i] + test_S[3] * W_sizes[i][0]);
@@ -497,7 +498,8 @@ float propagate_backwards_gpu_train(float *data_gt, unsigned *data_S,
                                     float **delta_biases_d,
                                     unsigned **b_sizes,
                                     unsigned **pool_sizes,
-                                    float learning_rate)
+                                    float learning_rate,
+                                    unsigned na)
 {
 
     /**************************************************************************
@@ -569,7 +571,7 @@ float propagate_backwards_gpu_train(float *data_gt, unsigned *data_S,
                 (weights_d[0], weights_N,
                  delta_x_d, delta_N,
                  train_neuron_inputs_d[0], inputs_N,
-                 data_S[3], W_sizes[i][0], W_sizes[i][1]);
+                 data_S[3], W_sizes[i][0], W_sizes[i][1], na);
     }
 
     /**************************************************************************

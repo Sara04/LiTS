@@ -129,11 +129,12 @@ public:
     void transfer_trainable_parameters_to_gpu();
     void transfer_trainable_parameters_to_cpu();
 
-    void propagate_forward_train(float *data, unsigned *data_S);
-    void propagate_forward_test(float *data, unsigned *data_S, float *scores);
+    void propagate_forward_train(float *data, unsigned *data_S, unsigned na);
+    void propagate_forward_test(float *data, unsigned *data_S, float *scores,
+    		                    unsigned na);
     float compute_error(float *data_gt, unsigned *data_S);
     float propagate_backwards_train(float *data_gt, unsigned *data_S,
-                                    float learning_rate);
+                                    float learning_rate, unsigned na);
 
     void save_model(std::string model_path);
 };

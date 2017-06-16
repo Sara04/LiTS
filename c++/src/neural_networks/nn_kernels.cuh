@@ -17,7 +17,7 @@ void cost_function_backprop(float *data_gt,
                            float *train_neuron_outputs, unsigned N_outputs,
                            float *biases_x, unsigned biases_x_N,
                            unsigned N_samples,
-                           unsigned out_feat_len)
+                           unsigned out_feat_len, unsigned int na=2)
 {
     unsigned sample_idx = blockIdx.x;
     unsigned feat_idx = threadIdx.x;
@@ -40,7 +40,8 @@ void cost_function_backprop(float *data_gt,
 
         biases_x[biases_x_idx] =
                 (train_neuron_outputs[out_x_idx] - data_gt[gt_idx]) *
-                neuron_activation_derivative(train_neuron_inputs[in_x_idx]);
+                neuron_activation_derivative(train_neuron_inputs[in_x_idx],
+                		                     na);
     }
 }
 
@@ -69,9 +70,7 @@ void evaluate_error(float *data_gt,
                 label = 0.0;
             if(data_gt[i] == label)
                 *avg_error += 1;
-
         }
-
         *avg_error /= N_samples;
     }
 }
@@ -86,7 +85,8 @@ void propagate_forward_fcn_gpu_train(float *train_neuron_inputs,
                                      long start_ni,
                                      long start_no,
                                      long start_w,
-                                     long start_b)
+                                     long start_b,
+                                     unsigned int na=2)
 {
     unsigned rt = threadIdx.y;
     unsigned ct = threadIdx.x;
@@ -148,7 +148,7 @@ void propagate_forward_fcn_gpu_train(float *train_neuron_inputs,
                     v + biases_d[start_b + cb * BLOCK_SIZE + ct];
 
         train_neuron_outputs[n_out_idx] =
-                neuron_activation(train_neuron_inputs[n_in_idx]);
+                neuron_activation(train_neuron_inputs[n_in_idx], na);
     }
 }
 
@@ -162,7 +162,8 @@ void propagate_forward_fcn_gpu_test(float *train_neuron_outputs,
                                     long start_ni,
                                     long start_no,
                                     long start_w,
-                                    long start_b)
+                                    long start_b,
+                                    unsigned int na=2)
 {
     unsigned rt = threadIdx.y;
     unsigned ct = threadIdx.x;
@@ -220,7 +221,7 @@ void propagate_forward_fcn_gpu_test(float *train_neuron_outputs,
 
         float tmp = v + biases_d[start_b + cb * BLOCK_SIZE + ct];
 
-        train_neuron_outputs[n_out_idx] = neuron_activation(tmp);
+        train_neuron_outputs[n_out_idx] = neuron_activation(tmp, na);
     }
 }
 
@@ -232,7 +233,8 @@ void backpropagate_fcn_gpu_train(float *weights_d, long start_w,
                                  long start_in,
                                  unsigned N_feats,
                                  unsigned in_len,
-                                 unsigned out_len)
+                                 unsigned out_len,
+                                 unsigned int na=2)
 {
     unsigned rt = threadIdx.y;
     unsigned ct = threadIdx.x;
@@ -284,7 +286,11 @@ void backpropagate_fcn_gpu_train(float *weights_d, long start_w,
     {
         unsigned idx = (rb * BLOCK_SIZE + rt) * in_len + cb * BLOCK_SIZE + ct;
         delta_x_d[start_dx - N_feats * in_len + idx] = v *
-                neuron_activation_derivative(train_neuron_inputs_d[start_in - N_feats * in_len + idx]);
+                neuron_activation_derivative(
+                		train_neuron_inputs_d[start_in -
+                		                      N_feats * in_len +
+                		                      idx],
+                		na);
     }
 }
 

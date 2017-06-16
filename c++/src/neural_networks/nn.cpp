@@ -314,14 +314,14 @@ void NN::transfer_trainable_parameters_to_cpu()
  *      data: input training data
  *      data_S: input training data size
  *****************************************************************************/
-void NN::propagate_forward_train(float *data, unsigned *data_S)
+void NN::propagate_forward_train(float *data, unsigned *data_S, unsigned na)
 {
     propagate_forward_gpu_train(data, data_S,
                                 &neuron_inputs_d, &neuron_outputs_d,
                                 layers,
                                 &weights_d, W_sizes,
                                 &biases_d, b_sizes,
-                                pool_sizes);
+                                pool_sizes, na);
 }
 
 /******************************************************************************
@@ -334,7 +334,8 @@ void NN::propagate_forward_train(float *data, unsigned *data_S)
  *      data_S: input testing data size
  *      scores: array where to store network output
  *****************************************************************************/
-void NN::propagate_forward_test(float *data, unsigned *data_S, float *scores)
+void NN::propagate_forward_test(float *data, unsigned *data_S, float *scores,
+		                        unsigned na)
 {
     propagate_forward_gpu_test(data, data_S,
                                &neuron_outputs_d,
@@ -342,7 +343,7 @@ void NN::propagate_forward_test(float *data, unsigned *data_S, float *scores)
                                &weights_d, W_sizes,
                                &biases_d, b_sizes,
                                pool_sizes,
-                               scores);
+                               scores, na);
 }
 
 /******************************************************************************
@@ -380,7 +381,7 @@ float NN::compute_error(float *data_gt, unsigned *data_S)
  *      learning_rate: rate by which trainable parameters are updated
  *****************************************************************************/
 float NN::propagate_backwards_train(float *data_gt, unsigned *data_S,
-                                    float learning_rate)
+                                    float learning_rate, unsigned na)
 {
     float train_error;
     train_error = propagate_backwards_gpu_train(data_gt, data_S,
@@ -394,7 +395,7 @@ float NN::propagate_backwards_train(float *data_gt, unsigned *data_S,
                                                 &delta_biases_d,
                                                 b_sizes,
                                                 pool_sizes,
-                                                learning_rate);
+                                                learning_rate, na);
     return train_error;
 }
 
