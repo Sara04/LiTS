@@ -18,6 +18,17 @@ namespace fs = boost::filesystem;
 #include "lits_processing/lits_processor.h"
 #include "lung_segmentation/lung_segmentator.h"
 
+/******************************************************************************
+ * This functions runs lungs segmentation of all training examples.
+ * It is based on the voxel value thresholding, region growing and mathematical
+ * morphology operations. Before the segmentation, voxel values are clipped and
+ * normalized, and volume's axes are re-ordered and re-oriented to RAS or LAS
+ * coordinate system.
+ * !!! Note that the information provided in the scan's header about the axis
+ * orientation that is normal to the sagittal plane is not reliable!!!
+ * After the segmentation, axes of the meta-segmentation are re-ordered and
+ * re-oriented to the original state.
+ *****************************************************************************/
 void run_train_lungs_segmentation(LiTS_db db);
 
 

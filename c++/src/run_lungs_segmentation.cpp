@@ -47,6 +47,7 @@ void run_train_lungs_segmentation(LiTS_db db)
                            ls.get_width(), ls.get_height(), ls.get_depth(),
                            p.get_axes_order(), p.get_axes_orient(),
                            ls.get_axes_order(), ls.get_axes_orient());
+
         ls.save_meta_segment(meta_segment_path);
 
         ++show_progress;
