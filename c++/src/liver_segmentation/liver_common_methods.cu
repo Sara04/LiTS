@@ -111,6 +111,9 @@ void normalize_data(float *data, float *mean, float *std, unsigned *S)
     mean_std_normalization<<<n_blcks, MAX_THREADS>>>(data_d, mean_d, std_d,
                                                      S[0] * S[1] * S[2] * S[3],
                                                      S[0] * S[1] * S[2]);
+    cudaMemcpy(data, data_d, S[0] * S[1] * S[2] * S[3] * sizeof(float),
+    		   cudaMemcpyDeviceToHost);
+
     cudaFree(data_d);
     cudaFree(mean_d);
     cudaFree(std_d);
