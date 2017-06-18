@@ -21,7 +21,6 @@
  *      dorient0: desired orientation of the first axis
  *      dorient1: desired orientation of the seconds axis
  *      dorient2: desired orientation of the third axis
- *
  *****************************************************************************/
 template<typename T>
 __global__ void gpu_reorient(T *data, T *data_o,
@@ -31,7 +30,6 @@ __global__ void gpu_reorient(T *data, T *data_o,
                              short corient0, short corient1, short corient2,
                              short dorient0, short dorient1, short dorient2)
 {
-
     unsigned int t = (cord0 == 0) * w + (cord1 == 0) * h + (cord2 == 0) * d;
 
     if(threadIdx.x < t)
@@ -77,7 +75,6 @@ __global__ void gpu_reorient(T *data, T *data_o,
  *      upper_th_: upper clip value
  *      minimum_value_: minimum output value
  *      maximum_value_: maximum output value
- *
  *****************************************************************************/
 __global__ void gpu_normalize(float *volume,
                               unsigned w, unsigned h, unsigned d,
@@ -106,10 +103,10 @@ __global__ void gpu_normalize(float *volume,
  *
  * Arguments:
  *      volume: input volume
+ *      volume_f: output filtered volume
  *      w: volume width
  *      h: volume height
  *      d: volume depth
- *
  *****************************************************************************/
 __global__ void gpu_median_filter_3(float *volume, float *volume_f,
                                     unsigned w, unsigned h, unsigned d)
@@ -135,7 +132,8 @@ __global__ void gpu_median_filter_3(float *volume, float *volume_f,
                     int idx_tmp = d_idx * w * h;
                     idx_tmp += (r_idx + i) * w;
                     idx_tmp += (c_idx + j);
-                    array_to_sort[(i + k / 2) * k + j + k / 2] = volume[idx_tmp];
+                    array_to_sort[(i + k / 2) * k + j + k / 2] =\
+                    		volume[idx_tmp];
                 }
             }
 
@@ -168,10 +166,10 @@ __global__ void gpu_median_filter_3(float *volume, float *volume_f,
  *
  * Arguments:
  *      volume: input volume
+ *      volume_f: output filtered volume
  *      w: volume width
  *      h: volume height
  *      d: volume depth
- *
  *****************************************************************************/
 __global__ void gpu_median_filter_5(float *volume, float *volume_f,
                                     unsigned w, unsigned h, unsigned d)
@@ -197,7 +195,8 @@ __global__ void gpu_median_filter_5(float *volume, float *volume_f,
                     int idx_tmp = d_idx * w * h;
                     idx_tmp += (r_idx + i) * w;
                     idx_tmp += (c_idx + j);
-                    array_to_sort[(i + k / 2) * k + j + k / 2] = volume[idx_tmp];
+                    array_to_sort[(i + k / 2) * k + j + k / 2] =\
+                    		volume[idx_tmp];
                 }
             }
 
@@ -230,15 +229,12 @@ __global__ void gpu_median_filter_5(float *volume, float *volume_f,
  * axes
  *
  * Arguments:
- *      volume: input volume
- *      w: volume width
- *      h: volume height
- *      d: volume depth
- *      lower_th_: lower clip value
- *      upper_th_: upper clip value
- *      minimum_value_: minimum output value
- *      maximum_value_: maximum output value
- *
+ * 		re-orient: flag whether to re-orient axis
+ * 		permute: flag whether to permute axis
+ * 		cord: current axis order
+ * 		cornt: current axis orientations
+ * 		dord: desired axis order
+ * 		dornt: desired axis orientation
  *****************************************************************************/
 void reorient_permute(bool &reorient, bool &permute,
                       unsigned *cord, short *cornt,
@@ -258,19 +254,18 @@ void reorient_permute(bool &reorient, bool &permute,
  * axes if necessary
  *
  * Arguments:
- * 		in_volume: volume to be processed
+ * 		volume_cpu: volume to be processed
  * 		w: volume width
  * 		h: volume height
  * 		d: volume depth / number of slices
- *      cord - current order of the axes
- *      cornt - current orientation of the axes
- * 		lower_threshold: lower limit for voxel intensity
- * 		upper_threshold: upper limit for voxel intensity
- * 		minimum_value: minimum voxel intensity value in the
- * 			normalized voxel range
- * 		maximum_value: maximum voxel intensity value in the
- * 			normalized voxel range
- *
+ * 		cord: current order of axis
+ * 		cornt: current orientation of axis
+ *      lower_threshold: lower limit for voxel intensity
+ *      upper_threshold: upper limit for voxel intensity
+ *      minimum_value: minimum voxel intensity value in the
+ *          normalized voxel range
+ *      maximum_value: maximum voxel intensity value in the
+ *          normalized voxel range
  *****************************************************************************/
 void preprocess_volume_cuda(float *in_volume,
                             unsigned int w, unsigned int h, unsigned int d,
@@ -331,7 +326,6 @@ void preprocess_volume_cuda(float *in_volume,
  *          normalized voxel range
  *      maximum_value: maximum voxel intensity value in the
  *          normalized voxel range
- *
  *****************************************************************************/
 void normalize_volume_cuda(float *in_volume,
                            unsigned int w, unsigned int h, unsigned int d,
@@ -358,14 +352,13 @@ void normalize_volume_cuda(float *in_volume,
  * filter_with_median_cuda: de-noise volume with median filter
  *
  * Arguments:
- *      in_volume: volume to be processed
+ *      volume: volume to be processed
  *      w: volume width
  *      h: volume height
  *      d: volume depth / number of slices
  *      k: median kernel's size
- *
  *****************************************************************************/
-void filter_with_median_cuda(float *in_volume,
+void filter_with_median_cuda(float *volume,
                              unsigned int w, unsigned int h, unsigned int d,
                              int k)
 {
@@ -376,7 +369,7 @@ void filter_with_median_cuda(float *in_volume,
 
     cudaMalloc((void **) &volume_d, volume_B);
     cudaMalloc((void **) &volume_f_d, volume_B);
-    cudaMemcpy(volume_d, in_volume, volume_B, cudaMemcpyHostToDevice);
+    cudaMemcpy(volume_d, volume, volume_B, cudaMemcpyHostToDevice);
 
     dim3 grid(h, d);
     if(k == 3)
@@ -390,7 +383,7 @@ void filter_with_median_cuda(float *in_volume,
         std::cout<<"Selected median filter size is not supported"<<std::endl;
         exit(EXIT_FAILURE);
     }
-    cudaMemcpy(in_volume, volume_f_d, volume_B, cudaMemcpyDeviceToHost);
+    cudaMemcpy(volume, volume_f_d, volume_B, cudaMemcpyDeviceToHost);
     cudaFree(volume_d);
     cudaFree(volume_f_d);
 }
@@ -399,7 +392,7 @@ void filter_with_median_cuda(float *in_volume,
  * reorient_volume_cuda: re-orient axes of volume if necessary
  *
  * Arguments:
- *      in_volume: volume to be reoriented
+ *      volume: volume to be reoriented
  *      w: volume width
  *      h: volume height
  *      d: volume depth / number of slices
@@ -407,9 +400,8 @@ void filter_with_median_cuda(float *in_volume,
  *      cornt - current orientation of the axes
  *      dord - desired order of the axes
  *      dornt - desired orientation of the axes
- *
  *****************************************************************************/
-void reorient_volume_cuda(float *in_volume,
+void reorient_volume_cuda(float *volume,
                           unsigned int w, unsigned int h, unsigned int d,
                           unsigned *cord, short *cornt,
                           unsigned *dord, short *dornt)
@@ -425,7 +417,7 @@ void reorient_volume_cuda(float *in_volume,
         unsigned int volume_B = h * w * d * sizeof(float);
 
         cudaMalloc((void **) &volume_d, volume_B);
-        cudaMemcpy(volume_d, in_volume, volume_B, cudaMemcpyHostToDevice);
+        cudaMemcpy(volume_d, volume, volume_B, cudaMemcpyHostToDevice);
         cudaMalloc((void **) &volume_o_d, volume_B);
 
         unsigned int i1, i2;
@@ -439,7 +431,7 @@ void reorient_volume_cuda(float *in_volume,
                  cord[0], cord[1], cord[2], dord[0], dord[1], dord[2],
                  cornt[0], cornt[1], cornt[2], dornt[0], dornt[1], dornt[2]);
 
-        cudaMemcpy(in_volume, volume_o_d, volume_B, cudaMemcpyDeviceToHost);
+        cudaMemcpy(volume, volume_o_d, volume_B, cudaMemcpyDeviceToHost);
         cudaFree(volume_d);
         cudaFree(volume_o_d);
     }
@@ -449,7 +441,7 @@ void reorient_volume_cuda(float *in_volume,
  * reorient_segmentation_cuda: re-orient axes of segmentation if necessary
  *
  * Arguments:
- *      in_segment: segmentation to be reoriented
+ *      segment: segmentation to be reoriented
  *      w: volume width
  *      h: volume height
  *      d: volume depth / number of slices
@@ -457,9 +449,8 @@ void reorient_volume_cuda(float *in_volume,
  *      cornt - current orientation of the axes
  *      dord - desired order of the axes
  *      dornt - desired orientation of the axes
- *
  *****************************************************************************/
-void reorient_segment_cuda(unsigned char *in_segment,
+void reorient_segment_cuda(unsigned char *segment,
                            unsigned int w, unsigned int h, unsigned int d,
                            unsigned *cord, short *cornt,
                            unsigned *dord, short *dornt)
@@ -475,7 +466,7 @@ void reorient_segment_cuda(unsigned char *in_segment,
         unsigned int segment_B = h * w * d * sizeof(unsigned char);
 
         cudaMalloc((void **) &segment_d, segment_B);
-        cudaMemcpy(segment_d, in_segment, segment_B, cudaMemcpyHostToDevice);
+        cudaMemcpy(segment_d, segment, segment_B, cudaMemcpyHostToDevice);
         cudaMalloc((void **) &segment_o_d, segment_B);
 
         unsigned int i1, i2;
@@ -488,7 +479,7 @@ void reorient_segment_cuda(unsigned char *in_segment,
                  cord[0], cord[1], cord[2], dord[0], dord[1], dord[2],
                  cornt[0], cornt[1], cornt[2], dornt[0], dornt[1], dornt[2]);
 
-        cudaMemcpy(in_segment, segment_o_d, segment_B, cudaMemcpyDeviceToHost);
+        cudaMemcpy(segment, segment_o_d, segment_B, cudaMemcpyDeviceToHost);
         cudaFree(segment_d);
         cudaFree(segment_o_d);
     }
