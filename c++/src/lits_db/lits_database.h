@@ -31,9 +31,11 @@ namespace fs = boost::filesystem;
  *
  * Attributes:
  *
- * 		db_path: path to the directory which contains folders
+ * 		in_db_path: path to the directory which contains folders
  * 		    "Training Batch 1", "Training Batch 2" and
  * 		    "Testing Batch"
+ * 	    out_db_path: path to the directory where the output of the
+ * 	    	experiment would be placed
  *
  * 		train_subjects: vector for storing subjects' names
  * 			from the training batches
@@ -88,7 +90,7 @@ namespace fs = boost::filesystem;
  * 		    meta segmentation path
  *      get_test_volume_path: get testing subject's volume path
  *      get_test_segment_path: get testing subject's segmentation path
- *
+ *      get_train_liver_side_gt_path: get train liver side ground truth
  */
 
 class LiTS_db
