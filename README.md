@@ -1,4 +1,5 @@
 # LiTS
+in progress ...
 Liver Tumor Segmentation Challenge
 
 portal:
